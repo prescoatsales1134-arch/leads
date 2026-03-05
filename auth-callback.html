@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signing in…</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .box { text-align: center; }
+    .err { color: #b91c1c; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <p id="msg">Signing in…</p>
+    <p id="err" class="err" hidden></p>
+  </div>
+  <script>
+    (function() {
+      var msg = document.getElementById('msg');
+      var errEl = document.getElementById('err');
+      function showErr(m) {
+        msg.textContent = 'Sign-in failed';
+        errEl.textContent = m || 'Unknown error';
+        errEl.hidden = false;
+      }
+      var hash = window.location.hash || '';
+      var params = new URLSearchParams(hash.replace(/^#/, ''));
+      var access_token = params.get('access_token');
+      var refresh_token = params.get('refresh_token');
+      if (!access_token) {
+        showErr('No token in URL. Try signing in again from the login page.');
+        return;
+      }
+      fetch('/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: access_token, refresh_token: refresh_token || '' }),
+        credentials: 'same-origin'
+      })
+        .then(function(r) {
+          if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Session failed'); });
+          return r.json();
+        })
+        .then(function() {
+          window.location.href = '/dashboard.html';
+        })
+        .catch(function(e) {
+          showErr(e.message || 'Could not establish session');
+        });
+    })();
+  </script>
+</body>
+</html>

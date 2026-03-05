@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lead AI – Leads & Sales Dashboard</title>
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="dashboard-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img src="assets/logo.png" alt="" class="sidebar-logo" />
+      <span>Lead AI Sales</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#dashboard" class="nav-item active" data-page="dashboard">
+        <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span>
+        Dashboard
+      </a>
+      <a href="#generate" class="nav-item" data-page="generate">
+        <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span>
+        Generate Leads
+      </a>
+      <a href="#leads" class="nav-item" data-page="leads">
+        <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        Leads
+      </a>
+      <a href="#settings" class="nav-item" data-page="settings">
+        <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+        Settings
+      </a>
+    </nav>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-label="Hide sidebar" title="Hide sidebar">
+        <svg id="sidebar-toggle-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-actions">
+        <span class="role-badge" id="role-badge">—</span>
+        <div class="profile-menu">
+          <button type="button" class="profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false">
+            <span class="profile-avatar" id="profile-avatar">?</span>
+            <span class="profile-email" id="profile-email">Loading…</span>
+            <svg class="profile-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="profile-dropdown" id="profile-dropdown" hidden>
+            <button type="button" id="profile-btn">Profile</button>
+            <button type="button" id="logout-btn">Log out</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content" id="main-content">
+      <!-- Dashboard -->
+      <section id="page-dashboard" class="page active">
+        <h1 class="page-title">Dashboard</h1>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Total Leads</span>
+            <span class="stat-value" id="stat-total-leads">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Generated Today</span>
+            <span class="stat-value" id="stat-today">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Exported Leads</span>
+            <span class="stat-value" id="stat-exported">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Synced to CRM</span>
+            <span class="stat-value" id="stat-synced">—</span>
+          </div>
+        </div>
+        <div class="card chart-placeholder">
+          <h2 class="card-title">Activity</h2>
+          <div class="chart-placeholder-inner" id="dashboard-activity-chart">
+            <p class="text-muted" id="dashboard-activity-empty">No lead data yet. Generate leads to see the chart.</p>
+            <div id="dashboard-activity-bars" class="activity-bars" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Generate Leads -->
+      <section id="page-generate" class="page">
+        <h1 class="page-title">Generate Leads</h1>
+        <div class="generate-layout">
+          <div class="card filters-panel">
+            <h2 class="card-title">Filters</h2>
+            <div class="form-grid">
+              <label class="field">
+                <span>Industry</span>
+                <div class="searchable-dropdown-wrap" id="industry-dropdown-wrap">
+                  <input type="text" id="filter-industry" placeholder="Type to search industry…" autocomplete="off" />
+                  <ul class="searchable-dropdown-list" id="industry-dropdown-list" role="listbox" hidden></ul>
+                </div>
+              </label>
+              <label class="field">
+                <span>Country</span>
+                <select id="filter-country">
+                  <option value="">Any</option>
+                  <option value="United States">United States</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Canada">Canada</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Germany">Germany</option>
+                  <option value="France">France</option>
+                  <option value="India">India</option>
+                  <option value="China">China</option>
+                  <option value="Japan">Japan</option>
+                  <option value="Brazil">Brazil</option>
+                  <option value="Mexico">Mexico</option>
+                  <option value="Spain">Spain</option>
+                  <option value="Italy">Italy</option>
+                  <option value="Netherlands">Netherlands</option>
+                  <option value="Sweden">Sweden</option>
+                  <option value="Switzerland">Switzerland</option>
+                  <option value="Singapore">Singapore</option>
+                  <option value="Israel">Israel</option>
+                  <option value="United Arab Emirates">United Arab Emirates</option>
+                  <option value="South Korea">South Korea</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>City</span>
+                <select id="filter-city">
+                  <option value="">Any</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Max results</span>
+                <input type="number" id="filter-maxResults" min="1" max="10000" value="50" placeholder="e.g. 50" title="Number of leads to generate (max depends on your monthly limit)" />
+              </label>
+              <label class="field">
+                <span>Company Size</span>
+                <select id="filter-companySize">
+                  <option value="1-10">1–10</option>
+                  <option value="11-50">11–50</option>
+                  <option value="51-200">51–200</option>
+                  <option value="201-500">201–500</option>
+                  <option value="501-1000">501–1,000</option>
+                  <option value="1001-5000">1,001–5,000</option>
+                  <option value="5001-10000">5,001–10,000</option>
+                  <option value="10001+">10,001+</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Keywords</span>
+                <input type="text" id="filter-keywords" placeholder="e.g. hiring, growth" />
+              </label>
+              <label class="field">
+                <span>Job Title</span>
+                <input type="text" id="filter-jobTitle" placeholder="e.g. Owner, Director" />
+              </label>
+              <label class="field field-check">
+                <input type="checkbox" id="filter-emailAvailable" />
+                <span>Email Available</span>
+              </label>
+              <label class="field field-check">
+                <input type="checkbox" id="filter-phoneAvailable" />
+                <span>Phone Available</span>
+              </label>
+            </div>
+            <p id="lead-limit-display" class="lead-limit-display text-muted" aria-live="polite"></p>
+            <button type="button" id="btn-generate-leads" class="btn btn-primary btn-block">Generate Leads</button>
+          </div>
+          <div class="card results-panel">
+            <div id="generate-results-toolbar" class="table-toolbar">
+              <div class="search-wrap" style="min-width: 0;">
+                <h2 class="card-title" style="margin: 0;">Results</h2>
+              </div>
+              <div class="toolbar-actions">
+                <button type="button" id="btn-generate-export-csv" class="btn btn-secondary">Export to CSV</button>
+              </div>
+            </div>
+            <div id="generate-success-banner" class="generate-success-banner" hidden aria-live="polite">
+              <span id="generate-success-banner-text">✅ <span id="generate-success-count">0</span> LinkedIn Leads Generated Successfully</span>
+            </div>
+            <div id="generate-next-step-card" class="next-step-card" hidden>
+              <h3 class="next-step-title">🚀 What would you like to do next?</h3>
+              <div class="next-step-actions">
+                <button type="button" id="btn-next-step-messages" class="btn btn-primary next-step-primary">
+                  Generate LinkedIn Messages
+                </button>
+                <button type="button" id="btn-next-step-cold-email" class="btn btn-secondary">Create Cold Email</button>
+                <button type="button" id="btn-next-step-export-csv" class="btn btn-secondary">Export CSV</button>
+              </div>
+            </div>
+            <div id="generate-loading" class="loading-skeleton generate-results-loading" hidden>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+            </div>
+            <div id="generate-empty" class="empty-state">
+              <p>Set filters and click “Generate Leads” to fetch leads.</p>
+            </div>
+            <div id="generate-results-table-wrap" class="table-wrap" hidden></div>
+            <div class="pagination" id="generate-pagination" hidden>
+              <button type="button" class="btn btn-ghost" id="generate-prev">Previous</button>
+              <span class="pagination-info" id="generate-pagination-info">Page 1</span>
+              <button type="button" class="btn btn-ghost" id="generate-next">Next</button>
+            </div>
+          </div>
+          <div id="ai-assistant-card" class="card ai-assistant-card" hidden>
+            <h2 class="card-title">AI Assistant</h2>
+            <p class="ai-assistant-desc text-muted">Generate personalized outreach for your leads.</p>
+            <div class="ai-assistant-quick-actions">
+              <button type="button" class="btn btn-secondary btn-sm ai-quick-action" data-prompt="Generate personalized LinkedIn DMs for these leads.">Generate LinkedIn DM</button>
+              <button type="button" class="btn btn-secondary btn-sm ai-quick-action" data-prompt="Write follow-up messages for these leads.">Write Follow-Up</button>
+              <button type="button" class="btn btn-secondary btn-sm ai-quick-action" data-prompt="Suggest personalized first lines for LinkedIn outreach for these leads.">Personalize First Line</button>
+            </div>
+            <div class="message-assistant-messages" id="message-assistant-messages"></div>
+            <form class="message-assistant-form" id="message-assistant-form">
+              <input type="text" id="message-assistant-input" placeholder="e.g. How should I cold email these leads?" autocomplete="off" />
+              <button type="submit" class="btn btn-primary">Send</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- Leads -->
+      <section id="page-leads" class="page">
+        <h1 class="page-title">Leads</h1>
+        <div class="card">
+          <div class="table-toolbar">
+            <div class="search-wrap leads-toolbar-filters">
+              <input type="search" id="leads-search" placeholder="Search leads…" class="input-search" />
+              <label for="leads-date" class="leads-date-label">Date</label>
+              <input type="date" id="leads-date" class="input-date" title="Filter by date (when lead was added/scraped)" />
+            </div>
+            <div class="toolbar-actions">
+              <button type="button" id="btn-export-csv" class="btn btn-secondary">Export CSV</button>
+            </div>
+          </div>
+          <div id="leads-loading" class="loading-skeleton" hidden>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+          </div>
+          <div id="leads-empty" class="empty-state">
+            <p>No leads yet. Generate leads or they will appear here once synced from n8n.</p>
+          </div>
+          <div id="leads-table-wrap" class="table-wrap" hidden>
+            <table class="data-table" id="leads-table">
+              <thead>
+                <tr>
+                  <th class="col-select"><input type="checkbox" id="leads-select-all" title="Select all" /></th>
+                  <th>Company Name</th>
+                  <th>Contact Name</th>
+                  <th>Job Title</th>
+                  <th>Industry</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Country</th>
+                  <th>Company Domain</th>
+                  <th>LinkedIn</th>
+                  <th>Scraped</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="leads-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="leads-pagination" hidden>
+            <button type="button" class="btn btn-ghost" id="leads-prev">Previous</button>
+            <span class="pagination-info" id="leads-pagination-info">Page 1</span>
+            <button type="button" class="btn btn-ghost" id="leads-next">Next</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section id="page-settings" class="page">
+        <h1 class="page-title">Settings</h1>
+        <div class="card">
+          <h2 class="card-title">Your account</h2>
+          <p class="text-muted" style="margin-bottom: 0.5rem;">Signed in as <strong id="settings-account-email">—</strong>. Role: <strong id="settings-account-role">—</strong>.</p>
+        </div>
+        <div class="card" id="settings-activity-log-section" hidden>
+          <h2 class="card-title">Activity log</h2>
+          <p class="text-muted">Dashboard stats are for each user’s current session. Below are recent actions (generate leads, sync to HubSpot, export CSV) by user. For full workflow history, use n8n logs or your CRM.</p>
+          <div id="activity-log-loading" class="loading-skeleton" hidden>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+          </div>
+          <div id="activity-log-empty" class="empty-state" hidden>
+            <p>No activity yet.</p>
+          </div>
+          <div id="activity-log-table-wrap" class="table-wrap" hidden>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>User</th>
+                  <th>Action</th>
+                  <th>Details</th>
+                  <th>View</th>
+                </tr>
+              </thead>
+              <tbody id="activity-log-tbody"></tbody>
+            </table>
+            <p style="margin-top: 0.75rem;">
+              <button type="button" class="btn btn-secondary btn-sm" id="activity-log-view-all">View all activity</button>
+            </p>
+          </div>
+        </div>
+        <div class="card" id="settings-admin-section" hidden>
+          <h2 class="card-title">Manage Users</h2>
+          <p class="text-muted">View all users and assign Admin or Manager roles.</p>
+          <div id="manage-users-loading" class="loading-skeleton" hidden>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+          </div>
+          <div id="manage-users-empty" class="empty-state" hidden>
+            <p>No users found, or you don’t have permission to view profiles.</p>
+          </div>
+          <div id="manage-users-table-wrap" class="table-wrap" hidden>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Lead limit <span class="text-muted" style="font-weight:normal;">/month</span></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="manage-users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Profile modal -->
+  <div class="modal-overlay" id="profile-modal-overlay" hidden>
+    <div class="modal" id="profile-modal" role="dialog" aria-labelledby="profile-modal-title">
+      <div class="modal-header">
+        <h2 id="profile-modal-title">Profile</h2>
+        <button type="button" class="modal-close" id="profile-modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body" id="profile-modal-body">
+        <dl class="profile-dl">
+          <dt>Email</dt>
+          <dd id="profile-modal-email">—</dd>
+          <dt>Name</dt>
+          <dd id="profile-modal-name">—</dd>
+          <dt>Role</dt>
+          <dd id="profile-modal-role">—</dd>
+        </dl>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" id="profile-modal-close-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View all activity modal: content is filled entirely by JS (app.js openActivityLogModal) -->
+  <div class="modal-overlay" id="activity-log-modal-overlay" hidden>
+    <div class="modal modal--large" id="activity-log-modal" role="dialog" aria-labelledby="activity-log-modal-title">
+      <div class="modal-header">
+        <h2 id="activity-log-modal-title">All activity</h2>
+        <button type="button" class="modal-close" id="activity-log-modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body modal-body--tall" id="view-all-activity-content"></div>
+    </div>
+  </div>
+
+  <!-- Activity detail modal (standalone, for View from Settings table) -->
+  <div class="modal-overlay" id="activity-detail-modal-overlay" hidden>
+    <div class="modal" id="activity-detail-modal" role="dialog" style="max-width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h2 id="activity-detail-modal-title">Activity detail</h2>
+        <button type="button" class="modal-close" id="activity-detail-modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body" id="activity-detail-modal-body" style="overflow-y: auto; flex: 1;"></div>
+    </div>
+  </div>
+
+  <!-- Lead detail modal -->
+  <div class="modal-overlay" id="lead-modal-overlay" hidden>
+    <div class="modal" id="lead-modal" role="dialog" aria-labelledby="lead-modal-title">
+      <div class="modal-header">
+        <h2 id="lead-modal-title">Lead details</h2>
+        <button type="button" class="modal-close" id="lead-modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body" id="lead-modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" id="lead-modal-close-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Chat widget -->
+  <div class="chat-widget" id="chat-widget">
+    <button type="button" class="chat-toggle" id="chat-toggle" aria-label="Open chat">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </button>
+    <div class="chat-panel" id="chat-panel" hidden>
+      <div class="chat-header">
+        <span>AI Assistant</span>
+        <button type="button" class="chat-close" id="chat-close" aria-label="Close chat">&times;</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <form class="chat-form" id="chat-form">
+        <input type="text" id="chat-input" placeholder="Ask how to generate leads…" autocomplete="off" />
+        <button type="submit" class="btn btn-primary">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      function loadScript(src) {
+        return new Promise(function(resolve, reject) {
+          var s = document.createElement('script');
+          s.src = src;
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      fetch('/api/env', { credentials: 'same-origin' })
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('Config failed ' + r.status)); })
+        .then(function(env) {
+          window.__ENV__ = env || {};
+        })
+        .then(function() { return loadScript('utils.js'); })
+        .then(function() { return loadScript('auth.js'); })
+        .then(function() { return loadScript('leads.js'); })
+        .then(function() { return loadScript('message-assistant.js'); })
+        .then(function() { return loadScript('chatbot.js?v=3'); })
+        .then(function() { return loadScript('app.js?v=3'); })
+        .catch(function(e) {
+          console.error(e);
+          document.body.innerHTML = '<div style="padding:2rem;text-align:center;font-family:sans-serif;"><p>Could not load config. Start the server with: <code>npm start</code></p><p>' + (e.message || '') + '</p></div>';
+        });
+    })();
+  </script>
+</body>
+</html>
