@@ -797,10 +797,141 @@ body {
   font-size: 0.875rem;
 }
 
+.lead-limit-strip {
+  background: var(--primary-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  min-height: 2.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.lead-limit-strip .lead-limit-display {
+  margin: 0;
+}
+
 .lead-limit-display {
   font-size: 0.875rem;
   margin-bottom: 0.75rem;
   min-height: 1.25rem;
+}
+
+.lead-limit-cta a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.lead-limit-cta a:hover {
+  text-decoration: underline;
+}
+
+/* ----- Pricing ----- */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.pricing-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  transition: box-shadow var(--transition);
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-card:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+.pricing-card-featured {
+  border: 2px solid var(--primary);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
+}
+
+.pricing-card-header {
+  background: linear-gradient(135deg, var(--primary-light) 0%, #e0e7ff 100%);
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+}
+
+.pricing-plan-name {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pricing-tagline {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.pricing-price {
+  margin: 0;
+}
+
+.pricing-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.pricing-period {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.pricing-features {
+  list-style: none;
+  margin: 0;
+  padding: 1.25rem 1.25rem 1.5rem;
+  flex: 1;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  font-size: 0.9375rem;
+  color: var(--text);
+}
+
+.pricing-check {
+  color: var(--success);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pricing-contact {
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pricing-contact a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.pricing-contact a:hover {
+  text-decoration: underline;
 }
 
 .searchable-dropdown-wrap {

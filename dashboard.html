@@ -29,6 +29,10 @@
         <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
         Leads
       </a>
+      <a href="#pricing" class="nav-item" data-page="pricing">
+        <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+        Pricing
+      </a>
       <a href="#settings" class="nav-item" data-page="settings">
         <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
         Settings
@@ -95,6 +99,9 @@
       <section id="page-generate" class="page">
         <h1 class="page-title">Generate Leads</h1>
         <div class="generate-layout">
+          <div class="lead-limit-strip" aria-live="polite">
+            <span id="lead-limit-display" class="lead-limit-display text-muted"></span>
+          </div>
           <div class="card filters-panel">
             <h2 class="card-title">Filters</h2>
             <div class="form-grid">
@@ -171,8 +178,7 @@
                 <span>Phone Available</span>
               </label>
             </div>
-            <p id="lead-limit-display" class="lead-limit-display text-muted" aria-live="polite"></p>
-            <p class="lead-limit-contact text-muted" style="margin-top: 0.25rem; font-size: 0.9rem;">Contact <a href="mailto:prescottantonio9@gmail.com">prescottantonio9@gmail.com</a> for exceeding limit of generating leads.</p>
+            <p class="lead-limit-cta text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">Need more leads? Go to the <a href="#pricing">Pricing</a> tab for plans and limits.</p>
             <button type="button" id="btn-generate-leads" class="btn btn-primary btn-block">Generate Leads</button>
           </div>
           <div class="card results-panel">
@@ -283,13 +289,56 @@
         </div>
       </section>
 
+      <!-- Pricing -->
+      <section id="page-pricing" class="page">
+        <h1 class="page-title">Pricing</h1>
+        <div class="pricing-grid">
+          <div class="pricing-card">
+            <div class="pricing-card-header">
+              <h2 class="pricing-plan-name">Basic</h2>
+              <p class="pricing-tagline">Best for getting started</p>
+              <p class="pricing-price"><span class="pricing-amount">$5</span> <span class="pricing-period">per month</span></p>
+            </div>
+            <ul class="pricing-features">
+              <li><span class="pricing-check" aria-hidden="true">✓</span> 1,000 leads per month</li>
+              <li><span class="pricing-check" aria-hidden="true">✓</span> Generate & save leads</li>
+              <li><span class="pricing-check" aria-hidden="true">✓</span> Export to CSV</li>
+            </ul>
+          </div>
+          <div class="pricing-card pricing-card-featured">
+            <div class="pricing-card-header">
+              <h2 class="pricing-plan-name">Standard</h2>
+              <p class="pricing-tagline">Most popular</p>
+              <p class="pricing-price"><span class="pricing-amount">$25</span> <span class="pricing-period">per month</span></p>
+            </div>
+            <ul class="pricing-features">
+              <li><span class="pricing-check" aria-hidden="true">✓</span> 5,000 leads per month</li>
+              <li><span class="pricing-check" aria-hidden="true">✓</span> Generate & save leads</li>
+              <li><span class="pricing-check" aria-hidden="true">✓</span> Export to CSV</li>
+            </ul>
+          </div>
+          <div class="pricing-card">
+            <div class="pricing-card-header">
+              <h2 class="pricing-plan-name">Premium</h2>
+              <p class="pricing-tagline">For heavy users</p>
+              <p class="pricing-price"><span class="pricing-amount">$45</span> <span class="pricing-period">per month</span></p>
+            </div>
+            <ul class="pricing-features">
+              <li><span class="pricing-check" aria-hidden="true">✓</span> 10,000 leads per month</li>
+              <li><span class="pricing-check" aria-hidden="true">✓</span> Generate & save leads</li>
+              <li><span class="pricing-check" aria-hidden="true">✓</span> Export to CSV</li>
+            </ul>
+          </div>
+        </div>
+        <p class="pricing-contact">For plan upgrades or custom limits, contact <a href="mailto:prescottantonio9@gmail.com">prescottantonio9@gmail.com</a>.</p>
+      </section>
+
       <!-- Settings -->
       <section id="page-settings" class="page">
         <h1 class="page-title">Settings</h1>
         <div class="card">
           <h2 class="card-title">Your account</h2>
           <p class="text-muted" style="margin-bottom: 0.5rem;">Signed in as <strong id="settings-account-email">—</strong>. Role: <strong id="settings-account-role">—</strong>.</p>
-          <p class="text-muted" style="margin-top: 1rem; margin-bottom: 0;">Contact <a href="mailto:prescottantonio9@gmail.com">prescottantonio9@gmail.com</a> for exceeding limit of generating leads.</p>
         </div>
         <div class="card" id="settings-activity-log-section" hidden>
           <h2 class="card-title">Activity log</h2>
