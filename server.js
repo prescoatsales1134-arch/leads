@@ -96,14 +96,14 @@ function getJwtExp(token) {
 
 // In-flight refresh deduplication: if two simultaneous requests try to refresh the
 // same refresh token, only one actually calls Supabase; the other waits for the result.
-// This prevents Supabase revoking the session when it detects the same refresh token
-// used twice (its "compromised token" protection).
+// Resolved value includes new tokens so EVERY waiting request can set cookies on its
+// own response (otherwise the second request never gets Set-Cookie and keeps old token → invalid session).
 var _refreshInFlight = {};
 
 /** Resolve current user: validate access token, or refresh with refresh_token cookie.
- *  Proactively refreshes when token expires in < 50 min.
+ *  Refreshes when token is missing or getUser fails; also when token expires in < 50 min.
  *  Never retries refresh with the same token — doing so triggers Supabase's replay-attack
- *  protection and revokes the session entirely. */
+ *  protection and revokes the session. */
 function getAuthUser(req, res) {
   if (!supabaseAuth) return Promise.resolve(null);
   const token = getAccessToken(req);
@@ -111,9 +111,10 @@ function getAuthUser(req, res) {
   const nowSec = Math.floor(Date.now() / 1000);
   const refreshThreshold = 50 * 60;
 
+  // Returns promise that resolves to null or { user, access_token, refresh_token } so
+  // every caller can set cookies on its own res (critical when multiple requests share the same refresh).
   function tryRefresh() {
     if (!refresh) return Promise.resolve(null);
-    // If another request is already refreshing the same token, reuse that promise
     if (_refreshInFlight[refresh]) return _refreshInFlight[refresh];
     const promise = supabaseAuth.auth.refreshSession({ refresh_token: refresh })
       .then(function (_ref) {
@@ -122,8 +123,9 @@ function getAuthUser(req, res) {
         delete _refreshInFlight[refresh];
         if (err || !data || !data.session) return null;
         const session = data.session;
-        setAuthCookies(res, session.access_token, session.refresh_token || undefined, req);
-        return data.user ? { user: data.user } : null;
+        const access_token = session.access_token;
+        const refresh_token = session.refresh_token || undefined;
+        return data.user ? { user: data.user, access_token: access_token, refresh_token: refresh_token } : null;
       })
       .catch(function () {
         delete _refreshInFlight[refresh];
@@ -131,6 +133,14 @@ function getAuthUser(req, res) {
       });
     _refreshInFlight[refresh] = promise;
     return promise;
+  }
+
+  function applyRefreshResult(authResult) {
+    if (authResult && authResult.access_token) {
+      setAuthCookies(res, authResult.access_token, authResult.refresh_token, req);
+      return authResult.user ? { user: authResult.user } : null;
+    }
+    return authResult;
   }
 
   if (token) {
@@ -141,15 +151,15 @@ function getAuthUser(req, res) {
         if (!err && data && data.user) {
           const exp = getJwtExp(token);
           if (exp && (exp - nowSec) < refreshThreshold) {
-            return tryRefresh();
+            return tryRefresh().then(applyRefreshResult);
           }
           return { user: data.user };
         }
-        return tryRefresh();
+        return tryRefresh().then(applyRefreshResult);
       })
-      .catch(function () { return tryRefresh(); });
+      .catch(function () { return tryRefresh().then(applyRefreshResult); });
   }
-  return tryRefresh();
+  return tryRefresh().then(applyRefreshResult);
 }
 
 function resolveRole(adminClient, userId) {
