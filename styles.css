@@ -797,18 +797,21 @@ body {
   font-size: 0.875rem;
 }
 
-.lead-limit-strip {
-  background: var(--primary-light);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 1rem;
-  margin-bottom: 1rem;
-  min-height: 2.25rem;
+.filters-panel-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
-.lead-limit-strip .lead-limit-display {
+.filters-panel-header .card-title {
+  margin: 0;
+}
+
+.filters-panel-header .lead-limit-display {
+  font-size: 0.875rem;
   margin: 0;
 }
 
@@ -830,41 +833,46 @@ body {
 /* ----- Pricing ----- */
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
+  max-width: 960px;
+}
+
+@media (max-width: 900px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .pricing-card {
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
   overflow: hidden;
-  transition: box-shadow var(--transition);
+  transition: box-shadow var(--transition), border-color var(--transition);
   display: flex;
   flex-direction: column;
 }
 
 .pricing-card:hover {
   box-shadow: var(--card-shadow-hover);
-}
-
-.pricing-card-featured {
-  border: 2px solid var(--primary);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
+  border-color: var(--primary);
 }
 
 .pricing-card-header {
-  background: linear-gradient(135deg, var(--primary-light) 0%, #e0e7ff 100%);
+  background: var(--primary);
+  color: #fff;
   padding: 1.5rem 1.25rem;
   text-align: center;
 }
 
 .pricing-plan-name {
   margin: 0 0 0.25rem;
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  color: var(--text);
+  color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -872,7 +880,7 @@ body {
 .pricing-tagline {
   margin: 0 0 0.75rem;
   font-size: 0.8125rem;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .pricing-price {
@@ -880,14 +888,14 @@ body {
 }
 
 .pricing-amount {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: var(--text);
+  color: #fff;
 }
 
 .pricing-period {
-  font-size: 0.875rem;
-  color: var(--text-muted);
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 400;
 }
 
@@ -902,9 +910,14 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.35rem 0;
+  padding: 0.4rem 0;
   font-size: 0.9375rem;
   color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.pricing-features li:last-child {
+  border-bottom: none;
 }
 
 .pricing-check {
