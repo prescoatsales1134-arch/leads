@@ -832,9 +832,13 @@ body {
 
 /* ----- Pricing ----- */
 .page-pricing-wrap {
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: center;
+}
+
+.page.active.page-pricing-wrap {
+  display: flex;
 }
 
 .page-pricing-wrap .page-title {
