@@ -1750,6 +1750,33 @@ body.modal-open {
   margin-bottom: 0.35rem;
 }
 
+.ma-followups {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border, #e5e7eb);
+  font-size: 0.8125rem;
+}
+.ma-followups-label {
+  color: var(--text-muted, #6b7280);
+  margin-right: 0.35rem;
+}
+.ma-followup-btn {
+  display: inline-block;
+  margin: 0.15rem 0.25rem 0.15rem 0;
+  padding: 0.25rem 0.5rem;
+  font-size: inherit;
+  color: var(--primary, #2563eb);
+  background: transparent;
+  border: 1px solid var(--primary, #2563eb);
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: normal;
+  text-align: left;
+}
+.ma-followup-btn:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
 /* ----- Responsive ----- */
 @media (max-width: 1024px) {
   .generate-layout {

@@ -126,6 +126,28 @@
     return html.join('');
   }
 
+  /** Render templates reply (type === 'templates' with linkedin_dm_template, cold_email_template, follow_up_template) */
+  function renderTemplatesReply(parsed) {
+    var reply = parsed && parsed.reply;
+    if (!reply || typeof reply !== 'object' || reply.type !== 'templates') return '';
+    var html = [];
+    html.push('<div class="ma-reply-structured ma-reply-templates">');
+    if (reply.linkedin_dm_template) {
+      html.push('<div class="ma-reply-section"><div class="ma-reply-section-title">LinkedIn DM template</div><div class="ma-reply-section-body">' + escapeHtml(reply.linkedin_dm_template).replace(/\n/g, '<br>') + '</div></div>');
+    }
+    if (reply.cold_email_template && (reply.cold_email_template.subject || reply.cold_email_template.body)) {
+      html.push('<div class="ma-reply-section"><div class="ma-reply-section-title">Cold email template</div>');
+      if (reply.cold_email_template.subject) html.push('<div class="ma-reply-email-subject">' + escapeHtml(reply.cold_email_template.subject) + '</div>');
+      if (reply.cold_email_template.body) html.push('<div class="ma-reply-section-body">' + escapeHtml(reply.cold_email_template.body).replace(/\n/g, '<br>') + '</div>');
+      html.push('</div>');
+    }
+    if (reply.follow_up_template) {
+      html.push('<div class="ma-reply-section"><div class="ma-reply-section-title">Follow-up template</div><div class="ma-reply-section-body">' + escapeHtml(reply.follow_up_template).replace(/\n/g, '<br>') + '</div></div>');
+    }
+    html.push('</div>');
+    return html.length > 2 ? html.join('') : '';
+  }
+
   function appendStructuredOrMarkdown(replyText) {
     var el = getMessagesEl();
     if (!el) return;
@@ -144,14 +166,50 @@
         parsed = JSON.parse(trimmed);
       } catch (e) {}
     }
+
+    // Workflow can return { "reply": "plain text", "followups": [] } — show the string, not raw JSON
+    var replyContent = parsed && parsed.reply;
+    if (typeof replyContent === 'string' && replyContent.trim()) {
+      div.classList.add('chat-msg-markdown');
+      div.innerHTML = renderMarkdown(replyContent.trim());
+      if (parsed.followups && Array.isArray(parsed.followups) && parsed.followups.length > 0) {
+        var followupWrap = document.createElement('div');
+        followupWrap.className = 'ma-followups';
+        followupWrap.innerHTML = '<span class="ma-followups-label">Suggested:</span> ' + parsed.followups.map(function (q) {
+          return '<button type="button" class="ma-followup-btn">' + escapeHtml(q) + '</button>';
+        }).join(' ');
+        div.appendChild(followupWrap);
+        followupWrap.querySelectorAll('.ma-followup-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var input = document.getElementById('message-assistant-input');
+            if (input) { input.value = btn.textContent; input.focus(); }
+          });
+        });
+      }
+      el.appendChild(div);
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+
     var structuredHtml = parsed ? renderStructuredReply(parsed) : '';
     if (structuredHtml) {
       div.classList.add('ma-reply-wrapper');
       div.innerHTML = structuredHtml;
-    } else {
-      div.classList.add('chat-msg-markdown');
-      div.innerHTML = renderMarkdown(trimmed);
+      el.appendChild(div);
+      el.scrollTop = el.scrollHeight;
+      return;
     }
+    var templatesHtml = parsed ? renderTemplatesReply(parsed) : '';
+    if (templatesHtml) {
+      div.classList.add('ma-reply-wrapper');
+      div.innerHTML = templatesHtml;
+      el.appendChild(div);
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+
+    div.classList.add('chat-msg-markdown');
+    div.innerHTML = renderMarkdown(trimmed);
     el.appendChild(div);
     el.scrollTop = el.scrollHeight;
   }
