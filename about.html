@@ -205,55 +205,43 @@
     .fade-left.visible { opacity: 1; transform: translateX(0); }
     .fade-right.visible { opacity: 1; transform: translateX(0); }
 
-    /* Features grid */
+    /* Features – horizontal rows */
     .about-features {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
+      max-width: 720px;
+      margin: 0 auto;
     }
-    @media (max-width: 768px) {
-      .about-features {
-        grid-template-columns: 1fr;
-      }
-    }
-    .about-feature-card {
-      background: rgba(255, 255, 255, 0.75);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-radius: 18px;
-      padding: 28px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    .feature-row {
+      display: flex;
+      gap: 24px;
+      padding: 28px 0;
+      border-bottom: 1px solid #e2e8f0;
       opacity: 0;
       transform: translateY(30px);
-      transition: opacity 0.6s ease, transform 0.6s ease, box-shadow 0.3s ease;
+      transition: opacity 0.6s ease, transform 0.6s ease;
     }
-    .about-feature-card.visible {
+    .feature-row:last-child {
+      border-bottom: none;
+    }
+    .feature-row.visible {
       opacity: 1;
       transform: translateY(0);
     }
-    .about-feature-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.12);
-    }
-    .about-feature-icon {
-      font-size: 2rem;
+    .feature-icon {
+      font-size: 28px;
       line-height: 1;
-      margin-bottom: 1rem;
-      display: block;
+      flex-shrink: 0;
     }
-    .about-feature-card h3 {
-      margin: 0 0 0.5rem;
-      font-size: 1.125rem;
+    .feature-content h3 {
+      font-size: 20px;
+      margin: 0 0 6px;
       font-weight: 600;
       color: var(--text);
     }
-    .about-feature-card p {
+    .feature-content p {
       margin: 0;
       font-size: 0.9375rem;
-      line-height: 1.5;
-      color: var(--text-muted);
+      color: #64748b;
+      line-height: 1.6;
     }
 
     /* Offer rows – editorial style */
@@ -347,30 +335,40 @@
           <h2 class="about-section-title">Features</h2>
         </div>
         <div class="about-features">
-          <div class="about-feature-card" data-animate>
-            <span class="about-feature-icon" aria-hidden="true">🔎</span>
-            <h3>Lead generation</h3>
-            <p>Generate leads with filters: industry, location, company size, job titles, and keywords. Results in a table with pagination and monthly limits.</p>
+          <div class="feature-row" data-animate>
+            <span class="feature-icon" aria-hidden="true">🔎</span>
+            <div class="feature-content">
+              <h3>Lead generation</h3>
+              <p>Generate leads using filters like industry, location, company size and job titles.</p>
+            </div>
           </div>
-          <div class="about-feature-card" data-animate>
-            <span class="about-feature-icon" aria-hidden="true">📄</span>
-            <h3>Export to CSV</h3>
-            <p>Select leads and export to CSV for use in other tools.</p>
+          <div class="feature-row" data-animate>
+            <span class="feature-icon" aria-hidden="true">📄</span>
+            <div class="feature-content">
+              <h3>Export to CSV</h3>
+              <p>Select leads and export them for use in other tools.</p>
+            </div>
           </div>
-          <div class="about-feature-card" data-animate>
-            <span class="about-feature-icon" aria-hidden="true">🤖</span>
-            <h3>AI Lead Gen Assistant</h3>
-            <p>Get advice on filters, industries, job titles, and how the dashboard works.</p>
+          <div class="feature-row" data-animate>
+            <span class="feature-icon" aria-hidden="true">🤖</span>
+            <div class="feature-content">
+              <h3>AI Lead Gen Assistant</h3>
+              <p>Get advice on filters, industries, job titles, and how the dashboard works.</p>
+            </div>
           </div>
-          <div class="about-feature-card" data-animate>
-            <span class="about-feature-icon" aria-hidden="true">✉️</span>
-            <h3>Message Assistant</h3>
-            <p>Get personalized cold emails, LinkedIn DMs, and follow-up messages for your leads or reusable templates.</p>
+          <div class="feature-row" data-animate>
+            <span class="feature-icon" aria-hidden="true">✉️</span>
+            <div class="feature-content">
+              <h3>Message Assistant</h3>
+              <p>Get personalized cold emails, LinkedIn DMs, and follow-up messages for your leads or reusable templates.</p>
+            </div>
           </div>
-          <div class="about-feature-card" data-animate>
-            <span class="about-feature-icon" aria-hidden="true">📊</span>
-            <h3>Dashboard &amp; settings</h3>
-            <p>View stats, manage your account, and for admins manage users and roles.</p>
+          <div class="feature-row" data-animate>
+            <span class="feature-icon" aria-hidden="true">📊</span>
+            <div class="feature-content">
+              <h3>Dashboard &amp; settings</h3>
+              <p>View stats, manage your account, and for admins manage users and roles.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -433,10 +431,10 @@
           var el = entry.target;
           var on = entry.isIntersecting;
           setVisible(el, on);
-          var cards = el.querySelectorAll('.about-feature-card[data-animate]');
-          if (cards.length) runStaggered(cards, 100, on);
-          var rows = el.querySelectorAll('.about-offer-row');
-          if (rows.length) runStaggered(rows, 80, on);
+          var featureRows = el.querySelectorAll('.feature-row[data-animate]');
+          if (featureRows.length) runStaggered(featureRows, 100, on);
+          var offerRows = el.querySelectorAll('.about-offer-row');
+          if (offerRows.length) runStaggered(offerRows, 80, on);
           var contact = el.querySelector('.about-contact-box[data-animate]');
           if (contact) setVisible(contact, on);
         });
