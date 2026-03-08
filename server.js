@@ -47,13 +47,16 @@ app.set('supabaseAdmin', supabaseAdmin);
 const COOKIE_NAME = 'leads_sid';
 const COOKIE_REFRESH_NAME = 'leads_refresh';
 function getCookieOpts(req) {
-  const isSecure = (req && (req.get('x-forwarded-proto') === 'https' || req.secure)) || process.env.NODE_ENV === 'production';
+  const isSecure =
+    (req && (req.get('x-forwarded-proto') === 'https' || req.secure)) ||
+    process.env.NODE_ENV === 'production';
+
   return {
     httpOnly: true,
     secure: !!isSecure,
     sameSite: 'lax',
     path: '/',
-    maxAge: 7 * 24 * 60 * 60
+    maxAge: 7 * 24 * 60 * 60 * 1000
   };
 }
 
@@ -76,9 +79,15 @@ function getRefreshToken(req) {
 }
 
 function setAuthCookies(res, access_token, refresh_token, req) {
-  const opts = getCookieOpts(req);
-  res.cookie(COOKIE_NAME, access_token, opts);
-  if (refresh_token) res.cookie(COOKIE_REFRESH_NAME, refresh_token, opts);
+  const baseOpts = getCookieOpts(req);
+  const accessOpts = { ...baseOpts, maxAge: 24 * 60 * 60 * 1000 };
+  const refreshOpts = { ...baseOpts, maxAge: 30 * 24 * 60 * 60 * 1000 };
+
+  res.cookie(COOKIE_NAME, access_token, accessOpts);
+
+  if (refresh_token) {
+    res.cookie(COOKIE_REFRESH_NAME, refresh_token, refreshOpts);
+  }
 }
 
 /** Get JWT exp (seconds) from access token; return 0 if invalid. */
