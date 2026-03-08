@@ -159,7 +159,7 @@
 
         auth.getSession().then(function(session) {
           if (session && session.user) {
-            window.location.href = 'dashboard.html';
+            window.location.href = 'about.html';
             return;
           }
 
@@ -200,7 +200,7 @@
                 .then(function(_ref) {
                   var data = _ref.data, error = _ref.error;
                   if (error) throw new Error(error.message);
-                  window.location.href = 'dashboard.html';
+                  window.location.href = 'about.html';
                 })
                 .catch(function(err) {
                   showErr(err.message || 'Login failed');
