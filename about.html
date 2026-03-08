@@ -7,7 +7,7 @@
   <link rel="icon" href="assets/favicon.png" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
       --primary: #2563EB;
@@ -28,48 +28,66 @@
       line-height: 1.5;
       overflow-x: hidden;
     }
+    h1, h2, h3 {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
 
     .about-canvas {
       position: fixed;
       inset: 0;
       z-index: 0;
-      background:
-        radial-gradient(circle at 20% 20%, rgba(37,99,235,0.15), transparent 40%),
-        radial-gradient(circle at 80% 40%, rgba(37,99,235,0.12), transparent 45%),
-        linear-gradient(to bottom, #f8fafc, #eef2f7);
+      background: linear-gradient(to bottom, #F8FAFC, #eef2f7);
+      overflow: hidden;
     }
 
-    .shape {
+    .blob-wrap {
       position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.5;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
     }
-    .shape-1 {
-      width: 400px;
-      height: 400px;
-      background: rgba(37,99,235,0.2);
-      top: -100px;
-      left: -100px;
-      animation: float1 18s ease-in-out infinite;
+    .blob-outer {
+      position: absolute;
+      animation: floatBlob 20s ease-in-out infinite;
     }
-    .shape-2 {
+    .blob-outer.blob-2 { animation-duration: 24s; animation-delay: 2s; }
+    .blob-outer.blob-3 { animation-duration: 18s; animation-delay: 1s; }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: radial-gradient(circle, rgba(37,99,235,0.35) 0%, rgba(37,99,235,0.1) 50%, transparent 70%);
+      filter: blur(60px);
+      will-change: transform;
+    }
+    .blob-outer.blob-1 {
+      width: 450px;
+      height: 450px;
+      top: -120px;
+      left: -100px;
+    }
+    .blob-outer.blob-2 {
+      width: 380px;
+      height: 380px;
+      bottom: -100px;
+      right: -80px;
+      top: auto;
+      left: auto;
+    }
+    .blob-outer.blob-3 {
       width: 350px;
       height: 350px;
-      background: rgba(37,99,235,0.15);
-      bottom: -80px;
-      right: -80px;
-      animation: float2 22s ease-in-out infinite;
+      top: 50%;
+      left: 50%;
+      margin-left: -175px;
+      margin-top: -175px;
     }
-    @keyframes float1 {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      33% { transform: translate(40px, 30px) scale(1.05); }
-      66% { transform: translate(-20px, 50px) scale(0.95); }
-    }
-    @keyframes float2 {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(-50px, -30px) scale(1.08); }
+    @keyframes floatBlob {
+      0%, 100% { transform: translateY(0) translateX(0); }
+      50% { transform: translateY(-40px) translateX(30px); }
     }
 
     .about-wrap {
@@ -90,8 +108,9 @@
     .about-hero-title {
       margin: 0 0 1rem;
       font-size: clamp(2.5rem, 8vw, 64px);
-      font-weight: 700;
-      letter-spacing: -0.02em;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
       color: var(--text);
       opacity: 0;
       transform: translateY(30px);
@@ -296,22 +315,31 @@
 </head>
 <body>
   <div class="about-canvas">
-    <div class="shape shape-1" aria-hidden="true"></div>
-    <div class="shape shape-2" aria-hidden="true"></div>
+    <div class="blob-wrap">
+      <div class="blob-outer blob-1">
+        <div class="blob" aria-hidden="true" data-parallax></div>
+      </div>
+      <div class="blob-outer blob-2">
+        <div class="blob" aria-hidden="true" data-parallax></div>
+      </div>
+      <div class="blob-outer blob-3">
+        <div class="blob" aria-hidden="true" data-parallax></div>
+      </div>
+    </div>
   </div>
 
   <div class="about-wrap">
     <section class="about-hero">
       <h1 class="about-hero-title">Sales Professional Dashboard</h1>
       <p class="about-hero-subtitle">"A smarter way to generate, qualify, and act on leads."</p>
-      <p class="about-hero-desc">Find better prospects, generate outreach instantly, and move leads directly into your CRM.</p>
-      <a href="/dashboard.html" class="about-hero-cta">Proceed to Dashboard</a>
+      <p class="about-hero-desc">Find better prospects, generate outreach instantly, and manage your prospecting workflow efficiently.</p>
+      <a href="dashboard.html" class="about-hero-cta">Proceed to Dashboard</a>
     </section>
 
     <div class="about-sections">
       <section class="about-section" id="purpose">
         <div class="about-section-head fade-up">
-          <h2 class="about-section-title">Our purpose</h2>
+          <h2 class="about-section-title">Our Purpose</h2>
           <p class="about-section-desc">Sales Professional Dashboard is a lead generation and sales productivity tool that helps professionals find leads, generate outreach messages, and manage their prospecting workflow more efficiently.</p>
         </div>
       </section>
@@ -358,7 +386,7 @@
             <span class="about-offer-icon" aria-hidden="true">🎯</span>
             <span>Flexible targeting</span>
           </div>
-          <div class="about-offer-row fade-right" data-animate>
+          <div class="about-offer-row fade-left" data-animate>
             <span class="about-offer-icon" aria-hidden="true">✉️</span>
             <span>Ready-to-use outreach</span>
           </div>
@@ -366,7 +394,7 @@
             <span class="about-offer-icon" aria-hidden="true">🔄</span>
             <span>CRM integration</span>
           </div>
-          <div class="about-offer-row fade-right" data-animate>
+          <div class="about-offer-row fade-left" data-animate>
             <span class="about-offer-icon" aria-hidden="true">📋</span>
             <span>Transparent limits</span>
           </div>
@@ -398,28 +426,30 @@
           var el = entry.target;
           el.classList.add('visible');
           var cards = el.querySelectorAll('.about-feature-card[data-animate]');
-          if (cards.length) {
-            cards.forEach(function (card, i) {
-              setTimeout(function () { card.classList.add('visible'); }, i * 100);
-            });
-          }
+          if (cards.length) cards.forEach(function (c, i) { setTimeout(function () { c.classList.add('visible'); }, i * 100); });
           var rows = el.querySelectorAll('.about-offer-row');
-          if (rows.length) {
-            rows.forEach(function (row, i) {
-              setTimeout(function () { row.classList.add('visible'); }, i * 80);
-            });
-          }
+          if (rows.length) rows.forEach(function (r, i) { setTimeout(function () { r.classList.add('visible'); }, i * 80); });
           var contact = el.querySelector('.about-contact-box[data-animate]');
           if (contact) contact.classList.add('visible');
         });
       }, opts);
+      document.querySelectorAll('.fade-up, .fade-left, .fade-right').forEach(function (el) { io.observe(el); });
+      document.querySelectorAll('.about-section').forEach(function (s) { io.observe(s); });
 
-      document.querySelectorAll('.fade-up, .fade-left, .fade-right').forEach(function (el) {
-        io.observe(el);
+      var mx = 0, my = 0, tx = 0, ty = 0;
+      document.addEventListener('mousemove', function (e) {
+        mx = (e.clientX / window.innerWidth - 0.5) * 2;
+        my = (e.clientY / window.innerHeight - 0.5) * 2;
       });
-      document.querySelectorAll('.about-section').forEach(function (section) {
-        io.observe(section);
-      });
+      function tick() {
+        tx += (mx * 10 - tx) * 0.08;
+        ty += (my * 10 - ty) * 0.08;
+        document.querySelectorAll('.blob[data-parallax]').forEach(function (b) {
+          b.style.transform = 'translate3d(' + tx + 'px,' + ty + 'px,0)';
+        });
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
     })();
   </script>
 </body>
