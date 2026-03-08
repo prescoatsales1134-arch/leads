@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About – Sales Professional Dashboard</title>
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #2563EB;
+      --primary-hover: #1d4ed8;
+      --bg: #F8FAFC;
+      --card: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    .about-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(37,99,235,0.15), transparent 40%),
+        radial-gradient(circle at 80% 40%, rgba(37,99,235,0.12), transparent 45%),
+        linear-gradient(to bottom, #f8fafc, #eef2f7);
+    }
+
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .shape-1 {
+      width: 400px;
+      height: 400px;
+      background: rgba(37,99,235,0.2);
+      top: -100px;
+      left: -100px;
+      animation: float1 18s ease-in-out infinite;
+    }
+    .shape-2 {
+      width: 350px;
+      height: 350px;
+      background: rgba(37,99,235,0.15);
+      bottom: -80px;
+      right: -80px;
+      animation: float2 22s ease-in-out infinite;
+    }
+    @keyframes float1 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(40px, 30px) scale(1.05); }
+      66% { transform: translate(-20px, 50px) scale(0.95); }
+    }
+    @keyframes float2 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-50px, -30px) scale(1.08); }
+    }
+
+    .about-wrap {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Hero */
+    .about-hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem 1.5rem 4rem;
+    }
+    .about-hero-title {
+      margin: 0 0 1rem;
+      font-size: clamp(2.5rem, 8vw, 64px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      opacity: 0;
+      transform: translateY(30px);
+      animation: heroTitleIn 0.8s ease 0.2s forwards;
+    }
+    @keyframes heroTitleIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .about-hero-subtitle {
+      margin: 0 0 0.75rem;
+      font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+      font-weight: 500;
+      color: var(--text-muted);
+      opacity: 0;
+      transform: translateY(20px);
+      animation: heroTitleIn 0.6s ease 0.5s forwards;
+    }
+    .about-hero-desc {
+      margin: 0 0 2.5rem;
+      font-size: clamp(1rem, 2vw, 1.125rem);
+      color: var(--text-muted);
+      max-width: 520px;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: heroTitleIn 0.6s ease 0.7s forwards;
+    }
+    .about-hero-cta {
+      display: inline-block;
+      padding: 14px 26px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: transform 0.25s ease, background 0.2s ease;
+      opacity: 0;
+      animation: heroTitleIn 0.5s ease 0.9s forwards;
+    }
+    .about-hero-cta:hover {
+      background: var(--primary-hover);
+      transform: translateY(-3px);
+    }
+
+    /* Sections container */
+    .about-sections {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem 5rem;
+    }
+
+    .about-section {
+      margin-bottom: 6rem;
+    }
+    .about-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .about-section-head {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .about-section-title {
+      margin: 0 0 0.75rem;
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .about-section-desc {
+      margin: 0;
+      font-size: 1.125rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+      max-width: 640px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Scroll animations */
+    .fade-up, .fade-left, .fade-right {
+      opacity: 0;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-up { transform: translateY(40px); }
+    .fade-left { transform: translateX(-50px); }
+    .fade-right { transform: translateX(50px); }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .fade-left.visible { opacity: 1; transform: translateX(0); }
+    .fade-right.visible { opacity: 1; transform: translateX(0); }
+
+    /* Features grid */
+    .about-features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    @media (max-width: 768px) {
+      .about-features {
+        grid-template-columns: 1fr;
+      }
+    }
+    .about-feature-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease, box-shadow 0.3s ease;
+    }
+    .about-feature-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .about-feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+    }
+    .about-feature-icon {
+      font-size: 2rem;
+      line-height: 1;
+      margin-bottom: 1rem;
+      display: block;
+    }
+    .about-feature-card h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .about-feature-card p {
+      margin: 0;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    /* Offer rows */
+    .about-offer-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .about-offer-row {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 1.25rem 1.5rem;
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      opacity: 0;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .about-offer-row.visible { opacity: 1; }
+    .about-offer-row.fade-left.visible { transform: translateX(0); }
+    .about-offer-row.fade-right.visible { transform: translateX(0); }
+    .about-offer-icon {
+      font-size: 1.75rem;
+      flex-shrink: 0;
+    }
+    .about-offer-row span:last-child {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* Contact */
+    .about-contact-box {
+      text-align: center;
+      padding: 2rem;
+    }
+    .about-contact-box p {
+      margin: 0 0 0.5rem;
+      font-size: 1rem;
+      color: var(--text-muted);
+    }
+    .about-contact-links {
+      font-size: 1.125rem;
+    }
+    .about-contact-links a {
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .about-contact-links a:hover {
+      text-decoration: underline;
+    }
+    .about-contact-sep {
+      margin: 0 0.5rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+  </style>
+</head>
+<body>
+  <div class="about-canvas">
+    <div class="shape shape-1" aria-hidden="true"></div>
+    <div class="shape shape-2" aria-hidden="true"></div>
+  </div>
+
+  <div class="about-wrap">
+    <section class="about-hero">
+      <h1 class="about-hero-title">Sales Professional Dashboard</h1>
+      <p class="about-hero-subtitle">"A smarter way to generate, qualify, and act on leads."</p>
+      <p class="about-hero-desc">Find better prospects, generate outreach instantly, and move leads directly into your CRM.</p>
+      <a href="dashboard.html" class="about-hero-cta">Proceed to Dashboard</a>
+    </section>
+
+    <div class="about-sections">
+      <section class="about-section" id="purpose">
+        <div class="about-section-head fade-up">
+          <h2 class="about-section-title">Our purpose</h2>
+          <p class="about-section-desc">Sales Professional Dashboard is a lead generation and sales productivity tool that helps professionals find leads, generate outreach messages, and manage their prospecting workflow more efficiently.</p>
+        </div>
+      </section>
+
+      <section class="about-section" id="features">
+        <div class="about-section-head fade-up">
+          <h2 class="about-section-title">Features</h2>
+        </div>
+        <div class="about-features">
+          <div class="about-feature-card" data-animate>
+            <span class="about-feature-icon" aria-hidden="true">🔎</span>
+            <h3>Lead generation</h3>
+            <p>Generate leads with filters: industry, location, company size, job titles, and keywords. Results in a table with pagination and monthly limits.</p>
+          </div>
+          <div class="about-feature-card" data-animate>
+            <span class="about-feature-icon" aria-hidden="true">📄</span>
+            <h3>Export to CSV</h3>
+            <p>Select leads and export to CSV for use in other tools.</p>
+          </div>
+          <div class="about-feature-card" data-animate>
+            <span class="about-feature-icon" aria-hidden="true">🤖</span>
+            <h3>AI Lead Gen Assistant</h3>
+            <p>Get advice on filters, industries, job titles, and how the dashboard works.</p>
+          </div>
+          <div class="about-feature-card" data-animate>
+            <span class="about-feature-icon" aria-hidden="true">✉️</span>
+            <h3>Message Assistant</h3>
+            <p>Get personalized cold emails, LinkedIn DMs, and follow-up messages for your leads or reusable templates.</p>
+          </div>
+          <div class="about-feature-card" data-animate>
+            <span class="about-feature-icon" aria-hidden="true">📊</span>
+            <h3>Dashboard &amp; settings</h3>
+            <p>View stats, manage your account, and for admins manage users and roles.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="about-section" id="offer">
+        <div class="about-section-head fade-up">
+          <h2 class="about-section-title">What we offer</h2>
+        </div>
+        <div class="about-offer-rows">
+          <div class="about-offer-row fade-left" data-animate>
+            <span class="about-offer-icon" aria-hidden="true">🎯</span>
+            <span>Flexible targeting</span>
+          </div>
+          <div class="about-offer-row fade-right" data-animate>
+            <span class="about-offer-icon" aria-hidden="true">✉️</span>
+            <span>Ready-to-use outreach</span>
+          </div>
+          <div class="about-offer-row fade-left" data-animate>
+            <span class="about-offer-icon" aria-hidden="true">🔄</span>
+            <span>CRM integration</span>
+          </div>
+          <div class="about-offer-row fade-right" data-animate>
+            <span class="about-offer-icon" aria-hidden="true">📋</span>
+            <span>Transparent limits</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="about-section" id="contact">
+        <div class="about-section-head fade-up">
+          <h2 class="about-section-title">Contact</h2>
+        </div>
+        <div class="about-contact-box fade-up" data-animate>
+          <p>For questions, plan upgrades, or custom limits, get in touch.</p>
+          <p class="about-contact-links">
+            <a href="mailto:info@antoniosalestraining.com">info@antoniosalestraining.com</a>
+            <span class="about-contact-sep">·</span>
+            <a href="tel:+18683274582">+1 868 327 4582</a>
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var opts = { root: null, rootMargin: '0px 0px -60px 0px', threshold: 0.08 };
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          var el = entry.target;
+          el.classList.add('visible');
+          var cards = el.querySelectorAll('.about-feature-card[data-animate]');
+          if (cards.length) {
+            cards.forEach(function (card, i) {
+              setTimeout(function () { card.classList.add('visible'); }, i * 100);
+            });
+          }
+          var rows = el.querySelectorAll('.about-offer-row');
+          if (rows.length) {
+            rows.forEach(function (row, i) {
+              setTimeout(function () { row.classList.add('visible'); }, i * 80);
+            });
+          }
+          var contact = el.querySelector('.about-contact-box[data-animate]');
+          if (contact) contact.classList.add('visible');
+        });
+      }, opts);
+
+      document.querySelectorAll('.fade-up, .fade-left, .fade-right').forEach(function (el) {
+        io.observe(el);
+      });
+      document.querySelectorAll('.about-section').forEach(function (section) {
+        io.observe(section);
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -790,35 +790,32 @@ body {
 
 /* Contact card */
 .about-card-contact .about-section-desc {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
-.about-contact-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
+.about-contact-text {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text);
 }
 
-.about-contact-btn {
-  display: inline-block;
-  padding: 10px 18px;
-  background: #2563eb;
-  color: #fff;
-  border-radius: 8px;
+.about-contact-text a {
+  color: var(--primary);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
-.about-contact-btn:hover {
-  transform: translateY(-2px);
-  background: var(--primary-hover);
+.about-contact-text a:hover {
+  text-decoration: underline;
+}
+
+.about-contact-sep {
+  margin: 0 0.5rem;
+  color: #64748b;
 }
 
 .about-contact-flag {
-  font-size: 1.25rem;
+  font-size: 1rem;
   line-height: 1;
 }
 
