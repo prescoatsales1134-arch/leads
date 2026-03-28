@@ -470,11 +470,12 @@ app.patch('/api/profiles/:id/role', function (req, res) {
       });
     })
     .then(function (result) {
+      if (res.headersSent) return;
       if (result && result.error) return res.status(500).json({ error: result.error.message });
       res.json({ ok: true });
     })
     .catch(function () {
-      res.status(500).json({ error: 'Server error' });
+      if (!res.headersSent) res.status(500).json({ error: 'Server error' });
     });
 });
 
@@ -494,11 +495,12 @@ app.patch('/api/profiles/:id/lead_limit', function (req, res) {
       });
     })
     .then(function (result) {
+      if (res.headersSent) return;
       if (result && result.error) return res.status(500).json({ error: result.error.message });
       res.json({ ok: true });
     })
     .catch(function () {
-      res.status(500).json({ error: 'Server error' });
+      if (!res.headersSent) res.status(500).json({ error: 'Server error' });
     });
 });
 
