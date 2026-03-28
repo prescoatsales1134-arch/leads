@@ -12,34 +12,70 @@
   var selectedLead = null;
   var selectedGenerateIds = {};
   var selectedLeadIds = {};
+  var leadSourceTab = 'all';
+  /** Generate tab: Apollo.io (linkedin webhook) vs Google Maps. */
+  var generateLeadSource = 'linkedin';
+  var lastGenerateBannerSource = 'linkedin';
 
-  var INDUSTRY_OPTIONS = [
+  /** Peakydev LinkedIn scraper — loaded from GET /api/linkedin-filter-options (fallback if API fails). */
+  var INDUSTRY_OPTIONS = ['Any'];
+  var SENIORITY_OPTIONS = [
     'Any',
+    'Founder',
+    'Chairman',
+    'President',
+    'CEO',
+    'CXO',
+    'Vice President',
+    'Director',
+    'Head',
+    'Manager',
+    'Senior',
+    'Junior',
+    'Entry Level',
+    'Executive'
+  ];
+  var REGIONS_BY_COUNTRY = {};
+
+  var FALLBACK_INDUSTRY_LIST = [
     'Accounting',
     'Banking',
-    'Biotechnology',
     'Computer Software',
-    'Construction',
-    'Events Services',
     'Financial Services',
     'Health, Wellness & Fitness',
-    'Higher Education',
-    'Hospital & Health Care',
     'Information Technology & Services',
     'Insurance',
     'Legal Services',
-    'Logistics & Supply Chain',
-    'Management Consulting',
     'Marketing & Advertising',
-    'Pharmaceuticals',
     'Real Estate',
-    'Restaurants',
     'Retail',
-    'Staffing and Recruiting',
-    'Telecommunications'
+    'Staffing and Recruiting'
   ];
 
-  var CITIES_BY_COUNTRY = {
+  var FALLBACK_COUNTRIES_LIST = [
+    'United States',
+    'United Kingdom',
+    'Canada',
+    'Australia',
+    'Germany',
+    'France',
+    'India',
+    'Spain',
+    'Italy',
+    'Netherlands',
+    'Brazil',
+    'Mexico',
+    'Japan',
+    'China',
+    'United Arab Emirates',
+    'Singapore',
+    'Israel',
+    'South Korea',
+    'Sweden',
+    'Switzerland'
+  ];
+
+  var FALLBACK_REGIONS_BY_COUNTRY = {
     'United States': ['Any', 'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville', 'Fort Worth', 'Columbus', 'Charlotte', 'San Francisco', 'Indianapolis', 'Seattle', 'Denver', 'Boston', 'Nashville', 'Detroit', 'Portland', 'Las Vegas', 'Memphis', 'Louisville', 'Baltimore', 'Milwaukee', 'Albuquerque', 'Tucson', 'Fresno', 'Sacramento', 'Kansas City', 'Atlanta', 'Miami', 'Raleigh', 'Omaha', 'Cleveland', 'Virginia Beach', 'Oakland', 'Minneapolis', 'Tulsa', 'Tampa', 'Arlington', 'New Orleans', 'Wichita', 'Bakersfield', 'Colorado Springs', 'Mesa', 'Washington', 'St. Louis', 'Pittsburgh', 'Cincinnati', 'Orlando', 'St. Paul', 'Anchorage', 'Honolulu'],
     'United Kingdom': ['Any', 'London', 'Birmingham', 'Manchester', 'Leeds', 'Glasgow', 'Liverpool', 'Bristol', 'Sheffield', 'Edinburgh', 'Cardiff', 'Belfast', 'Newcastle', 'Nottingham', 'Southampton', 'Brighton', 'Leicester', 'Coventry', 'Hull', 'Bradford', 'Stoke-on-Trent', 'Wolverhampton', 'Derby', 'Plymouth', 'Reading', 'Northampton', 'Luton', 'Aberdeen', 'Portsmouth', 'Sunderland', 'York', 'Oxford', 'Cambridge', 'Bournemouth', 'Swindon', 'Dundee', 'Swansea', 'Milton Keynes', 'Ipswich', 'Newport'],
     'Canada': ['Any', 'Toronto', 'Montreal', 'Vancouver', 'Calgary', 'Edmonton', 'Ottawa', 'Winnipeg', 'Quebec City', 'Hamilton', 'Kitchener', 'London', 'Victoria', 'Halifax', 'Oshawa', 'Windsor', 'Saskatoon', 'Regina', 'Sherbrooke', 'Barrie'],
@@ -62,6 +98,82 @@
     'Switzerland': ['Any', 'Zurich', 'Geneva', 'Basel', 'Bern', 'Lausanne', 'Winterthur', 'Lucerne', 'St. Gallen']
   };
 
+  var FALLBACK_COMPANY_SIZES = [
+    { value: '0 - 1', label: '0 – 1 employees' },
+    { value: '2 - 10', label: '2 – 10' },
+    { value: '11 - 50', label: '11 – 50' },
+    { value: '51 - 200', label: '51 – 200' },
+    { value: '201 - 500', label: '201 – 500' },
+    { value: '501 - 1000', label: '501 – 1,000' },
+    { value: '1001 - 5000', label: '1,001 – 5,000' },
+    { value: '5001 - 10000', label: '5,001 – 10,000' },
+    { value: '10000+', label: '10,000+' }
+  ];
+
+  var PEAKYDEV_SENIORITY_LIST = SENIORITY_OPTIONS.slice(1);
+
+  function cloneRegionsFallback() {
+    var o = {};
+    for (var k in FALLBACK_REGIONS_BY_COUNTRY) {
+      if (FALLBACK_REGIONS_BY_COUNTRY.hasOwnProperty(k)) {
+        o[k] = FALLBACK_REGIONS_BY_COUNTRY[k].filter(function (x) { return x !== 'Any'; });
+      }
+    }
+    return o;
+  }
+
+  function buildFallbackLinkedinPayload() {
+    return {
+      industries: FALLBACK_INDUSTRY_LIST.slice(),
+      countries: FALLBACK_COUNTRIES_LIST.slice(),
+      regionsByCountry: cloneRegionsFallback(),
+      seniority: PEAKYDEV_SENIORITY_LIST.slice(),
+      companySizes: FALLBACK_COMPANY_SIZES.slice()
+    };
+  }
+
+  function applyLinkedinFilterData(data) {
+    if (!data) return;
+    INDUSTRY_OPTIONS = ['Any'].concat(data.industries || FALLBACK_INDUSTRY_LIST);
+    SENIORITY_OPTIONS = ['Any'].concat(data.seniority || PEAKYDEV_SENIORITY_LIST);
+    REGIONS_BY_COUNTRY = data.regionsByCountry && typeof data.regionsByCountry === 'object'
+      ? data.regionsByCountry
+      : cloneRegionsFallback();
+
+    var countrySel = document.getElementById('filter-country');
+    if (countrySel) {
+      var countries = data.countries && data.countries.length ? data.countries : FALLBACK_COUNTRIES_LIST;
+      countrySel.innerHTML = '<option value="">Any country</option>' + countries.map(function (c) {
+        return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
+      }).join('');
+    }
+
+    var sizeSel = document.getElementById('filter-companySize');
+    if (sizeSel && data.companySizes && data.companySizes.length) {
+      sizeSel.innerHTML = '<option value="">Any company size</option>' + data.companySizes.map(function (o) {
+        return '<option value="' + escapeHtml(o.value) + '">' + escapeHtml(o.label) + '</option>';
+      }).join('');
+    }
+
+    if (typeof global._refreshLinkedinRegionOptions === 'function') {
+      global._refreshLinkedinRegionOptions();
+    }
+  }
+
+  function loadLinkedinFilterOptions() {
+    return fetch('/api/linkedin-filter-options', { credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) return Promise.reject(new Error('linkedin options ' + r.status));
+        return r.json();
+      })
+      .then(function (data) {
+        applyLinkedinFilterData(data);
+      })
+      .catch(function () {
+        applyLinkedinFilterData(buildFallbackLinkedinPayload());
+      });
+  }
+
   function getEnv() {
     return (global.__ENV__ || {});
   }
@@ -74,26 +186,64 @@
     return getEnv().N8N_SYNC_HUBSPOT_WEBHOOK || '';
   }
 
+  function syncGenerateSourceUI() {
+    var panel = document.querySelector('#page-generate .filters-panel');
+    var industryInput = document.getElementById('filter-industry');
+    document.querySelectorAll('#page-generate .generate-source-btn').forEach(function (btn) {
+      var on = btn.getAttribute('data-generate-source') === generateLeadSource;
+      btn.classList.toggle('is-active', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    if (panel) panel.setAttribute('data-generate-source', generateLeadSource);
+    if (industryInput) {
+      industryInput.placeholder = generateLeadSource === 'google'
+        ? 'e.g. Real Estate (comma-separated for multiple)'
+        : 'Search Peakydev industries…';
+    }
+  }
+
   function getFilterPayload() {
     var industryEl = document.getElementById('filter-industry');
-    var cityEl = document.getElementById('filter-city');
     var maxEl = document.getElementById('filter-maxResults');
     var maxVal = maxEl && maxEl.value ? parseInt(maxEl.value, 10) : 50;
     if (isNaN(maxVal) || maxVal < 1) maxVal = 50;
     var industryVal = (industryEl && industryEl.value) ? industryEl.value.trim() : '';
     if (industryVal === 'Any') industryVal = '';
-    var cityVal = (cityEl && cityEl.value) ? cityEl.value.trim() : '';
-    if (cityVal === 'Any') cityVal = '';
+    var countryVal = (document.getElementById('filter-country') && document.getElementById('filter-country').value) || '';
+    var emailAvailable = !!(document.getElementById('filter-emailAvailable') && document.getElementById('filter-emailAvailable').checked);
+    var phoneAvailable = !!(document.getElementById('filter-phoneAvailable') && document.getElementById('filter-phoneAvailable').checked);
+
+    if (generateLeadSource === 'google') {
+      var googleCityEl = document.getElementById('filter-google-city');
+      var cityFree = (googleCityEl && googleCityEl.value) ? googleCityEl.value.trim() : '';
+      return {
+        industry: industryVal,
+        country: countryVal,
+        city: cityFree,
+        maxResults: maxVal,
+        emailAvailable: emailAvailable,
+        phoneAvailable: phoneAvailable
+      };
+    }
+
+    var seniorityEl = document.getElementById('filter-seniority');
+    var regionEl = document.getElementById('filter-city');
+    var seniorityVal = (seniorityEl && seniorityEl.value) ? seniorityEl.value.trim() : '';
+    if (seniorityVal === 'Any') seniorityVal = '';
+    var regionVal = (regionEl && regionEl.value) ? regionEl.value.trim() : '';
+    if (regionVal === 'Any') regionVal = '';
     return {
       industry: industryVal,
-      country: (document.getElementById('filter-country') && document.getElementById('filter-country').value) || '',
-      city: cityVal,
+      country: countryVal,
+      city: regionVal,
+      personState: regionVal,
       maxResults: maxVal,
       companySize: (document.getElementById('filter-companySize') && document.getElementById('filter-companySize').value) || '',
       keywords: (document.getElementById('filter-keywords') && document.getElementById('filter-keywords').value) || '',
       jobTitle: (document.getElementById('filter-jobTitle') && document.getElementById('filter-jobTitle').value) || '',
-      emailAvailable: !!(document.getElementById('filter-emailAvailable') && document.getElementById('filter-emailAvailable').checked),
-      phoneAvailable: !!(document.getElementById('filter-phoneAvailable') && document.getElementById('filter-phoneAvailable').checked)
+      seniority: seniorityVal,
+      emailAvailable: emailAvailable,
+      phoneAvailable: phoneAvailable
     };
   }
 
@@ -104,7 +254,17 @@
     });
   }
 
-  function buildLeadsFromPayload(payload) {
+  function normalizeClientLeadSource(v) {
+    if (v === 'google' || (v && String(v).toLowerCase() === 'google')) return 'google';
+    return 'linkedin';
+  }
+
+  function formatLeadSourceLabel(src) {
+    return normalizeClientLeadSource(src) === 'google' ? 'Google' : 'LinkedIn';
+  }
+
+  function buildLeadsFromPayload(payload, defaultLeadSource) {
+    var defSrc = normalizeClientLeadSource(defaultLeadSource != null ? defaultLeadSource : 'linkedin');
     // n8n may return [ { leads: [...] } ], { leads: [...] }, or raw array of lead objects. Normalize to array of lead objects.
     var list = [];
     if (Array.isArray(payload)) {
@@ -130,6 +290,7 @@
       var country = (item.country || item.location_country || '').trim();
       var linkedin = (item.linkedin || item.linkedin_url || '').trim();
       var companyDomain = (item.companyDomain || item.job_company_website || '').trim().toLowerCase();
+      var leadSource = normalizeClientLeadSource(item.lead_source || item.leadSource || defSrc);
       return {
         id: item.id || item.email || email || Math.random().toString(36).slice(2),
         companyName: titleCase(companyName),
@@ -142,7 +303,8 @@
         companyDomain: companyDomain,
         country: titleCase(country),
         status: item.status || 'New',
-        createdAt: item.createdAt || new Date().toISOString()
+        createdAt: item.createdAt || new Date().toISOString(),
+        leadSource: leadSource
       };
     });
   }
@@ -203,6 +365,7 @@
             l.country = titleCase(lead.country || '');
             l.companyDomain = (lead.companyDomain || lead.company_domain || '').toLowerCase().trim();
             l.linkedin = (lead.linkedin || lead.linkedin_url || '').trim();
+            l.leadSource = normalizeClientLeadSource(lead.leadSource || lead.lead_source);
             return l;
           });
           applySearch();
@@ -213,8 +376,8 @@
       .catch(function () {});
   }
 
-  function addLeads(leads, onAdded) {
-    var normalized = buildLeadsFromPayload(leads);
+  function addLeads(leads, onAdded, defaultLeadSource) {
+    var normalized = buildLeadsFromPayload(leads, defaultLeadSource);
     var addedCount = 0;
     normalized.forEach(function (l) {
       var exists = allLeads.some(function (x) { return x.id === l.id || (x.email && x.email === l.email); });
@@ -255,12 +418,18 @@
       list = list.filter(function (l) {
         return [
           l.companyName, l.contactName, l.jobTitle, l.industry,
-          l.email, l.phone, l.linkedin, l.companyDomain, l.country, l.status
+          l.email, l.phone, l.linkedin, l.companyDomain, l.country, l.status,
+          formatLeadSourceLabel(l.leadSource), normalizeClientLeadSource(l.leadSource)
         ].some(function (v) { return String(v).toLowerCase().indexOf(q) !== -1; });
       });
     }
     if (dateVal) {
       list = list.filter(function (l) { return getLeadDateString(l) === dateVal; });
+    }
+    if (leadSourceTab === 'linkedin') {
+      list = list.filter(function (l) { return normalizeClientLeadSource(l.leadSource) === 'linkedin'; });
+    } else if (leadSourceTab === 'google') {
+      list = list.filter(function (l) { return normalizeClientLeadSource(l.leadSource) === 'google'; });
     }
     filteredLeads = list;
   }
@@ -307,6 +476,7 @@
         '<td>' + escapeHtml(lead.contactName) + '</td>' +
         '<td>' + escapeHtml(lead.jobTitle) + '</td>' +
         '<td>' + escapeHtml(lead.industry) + '</td>' +
+        '<td><span class="lead-source-badge lead-source-badge--' + escapeHtml(normalizeClientLeadSource(lead.leadSource)) + '">' + escapeHtml(formatLeadSourceLabel(lead.leadSource)) + '</span></td>' +
         '<td>' + escapeHtml(lead.email) + '</td>' +
         '<td>' + escapeHtml(lead.phone) + '</td>' +
         '<td>' + escapeHtml(lead.country) + '</td>' +
@@ -385,6 +555,7 @@
         '<dt>Contact</dt><dd>' + escapeHtml(lead.contactName) + '</dd>' +
         '<dt>Job Title</dt><dd>' + escapeHtml(lead.jobTitle) + '</dd>' +
         '<dt>Industry</dt><dd>' + escapeHtml(lead.industry) + '</dd>' +
+        '<dt>Source</dt><dd>' + escapeHtml(formatLeadSourceLabel(lead.leadSource)) + '</dd>' +
         '<dt>Email</dt><dd>' + escapeHtml(lead.email) + '</dd>' +
         '<dt>Phone</dt><dd>' + escapeHtml(lead.phone) + '</dd>' +
         '<dt>Country</dt><dd>' + escapeHtml(lead.country) + '</dd>' +
@@ -452,6 +623,12 @@
     if (bannerEl) {
       bannerEl.hidden = false;
       if (countEl) countEl.textContent = total;
+      var suffixEl = document.getElementById('generate-success-suffix');
+      if (suffixEl) {
+        suffixEl.textContent = lastGenerateBannerSource === 'google'
+          ? 'Google Maps Leads Generated Successfully'
+          : 'Apollo.io Leads Generated Successfully';
+      }
     }
     if (nextStepEl) {
       nextStepEl.hidden = false;
@@ -468,12 +645,13 @@
     var totalPages = Math.max(1, Math.ceil(total / PER_PAGE_GENERATE));
     var start = (generateCurrentPage - 1) * PER_PAGE_GENERATE;
     var slice = lastGeneratedLeads.slice(start, start + PER_PAGE_GENERATE);
-    var cols = ['companyName', 'contactName', 'jobTitle', 'industry', 'email', 'phone', 'country', 'companyDomain', 'linkedin', 'status'];
+    var cols = ['companyName', 'contactName', 'jobTitle', 'industry', 'leadSource', 'email', 'phone', 'country', 'companyDomain', 'linkedin', 'status'];
     var headerLabels = {
       companyName: 'Company Name',
       contactName: 'Contact Name',
       jobTitle: 'Job Title',
       industry: 'Industry',
+      leadSource: 'Source',
       email: 'Email',
       phone: 'Phone',
       country: 'Country',
@@ -492,6 +670,10 @@
         var cellHtml = cols.map(function (c) {
           var val = l[c] || '';
           var escaped = escapeHtml(val);
+          if (c === 'leadSource') {
+            var src = normalizeClientLeadSource(l.leadSource);
+            return '<td><span class="lead-source-badge lead-source-badge--' + escapeHtml(src) + '">' + escapeHtml(formatLeadSourceLabel(l.leadSource)) + '</span></td>';
+          }
           if (c === 'linkedin' && val) {
             var href = val.indexOf('http') === 0 ? val : 'https://' + val.replace(/^\/+/, '');
             return '<td class="col-linkedin"><a href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer" class="btn-link">LinkedIn</a></td>';
@@ -540,7 +722,7 @@
       if (global.utils && global.utils.toast) global.utils.toast('No results to export', 'info');
       return;
     }
-    var cols = ['companyName', 'companyDomain', 'contactName', 'jobTitle', 'industry', 'email', 'phone', 'linkedin', 'country', 'status'];
+    var cols = ['companyName', 'companyDomain', 'contactName', 'jobTitle', 'industry', 'leadSource', 'email', 'phone', 'linkedin', 'country', 'status'];
     var csv = global.utils && global.utils.toCSV ? global.utils.toCSV(toExport, cols) : '';
     if (!csv) {
       if (global.utils && global.utils.toast) global.utils.toast('No data to export', 'info');
@@ -602,7 +784,8 @@
       linkedin: lead.linkedin || '',
       companyDomain: lead.companyDomain || '',
       country: lead.country || '',
-      status: lead.status || 'New'
+      status: lead.status || 'New',
+      leadSource: normalizeClientLeadSource(lead.leadSource)
     };
   }
 
@@ -668,11 +851,13 @@
     if (btn) btn.disabled = true;
 
     function doGenerate() {
+      var source = generateLeadSource === 'google' ? 'google' : 'linkedin';
+      var body = Object.assign({}, payload, { source: source });
       fetch('/api/generate-leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify(payload)
+      body: JSON.stringify(body)
     })
       .then(function (res) {
         return res.json().catch(function () { return {}; }).then(function (data) {
@@ -686,6 +871,7 @@
             addLeads([]);
             return;
           }
+          lastGenerateBannerSource = source;
           addLeads(data, function (normalized, newCount, duplicateCount) {
             if (global.logActivity) global.logActivity('generate_leads', { count: normalized.length, newCount: newCount, duplicateCount: duplicateCount, leads: normalized.slice(0, 50) });
             if (global.utils && global.utils.toast) {
@@ -699,7 +885,7 @@
             }
             updateLeadLimitDisplay();
             if (normalized.length > 0 && getSyncWebhook()) syncBatch(normalized, true);
-          });
+          }, source);
         });
       })
       .catch(function () {
@@ -741,7 +927,7 @@
 
   function exportCSV() {
     var list = getSelectedLeadsForExport();
-    var cols = ['companyName', 'companyDomain', 'contactName', 'jobTitle', 'industry', 'email', 'phone', 'linkedin', 'country', 'status'];
+    var cols = ['companyName', 'companyDomain', 'contactName', 'jobTitle', 'industry', 'leadSource', 'email', 'phone', 'linkedin', 'country', 'status'];
     var csv = global.utils && global.utils.toCSV ? global.utils.toCSV(list, cols) : '';
     if (!csv) {
       if (global.utils && global.utils.toast) global.utils.toast('No leads to export', 'info');
@@ -796,6 +982,55 @@
       });
   }
 
+  function initSenioritySearchable() {
+    var input = document.getElementById('filter-seniority');
+    var listEl = document.getElementById('seniority-dropdown-list');
+    var wrap = document.getElementById('seniority-dropdown-wrap');
+    if (!input || !listEl) return;
+    function showList(filter) {
+      var q = (filter || '').toLowerCase().trim();
+      var options = SENIORITY_OPTIONS.filter(function (label) {
+        return !q || label.toLowerCase().indexOf(q) !== -1;
+      });
+      listEl.innerHTML = options.slice(0, 50).map(function (label, i) {
+        return '<li role="option" tabindex="-1" data-value="' + escapeHtml(label) + '"' + (i === 0 ? ' aria-selected="true"' : '') + '>' + escapeHtml(label) + '</li>';
+      }).join('');
+      listEl.hidden = options.length === 0;
+    }
+    function selectValue(val) {
+      if (input) input.value = val === 'Any' ? '' : val;
+      listEl.hidden = true;
+      input.focus();
+    }
+    input.addEventListener('focus', function () { showList(input.value); });
+    input.addEventListener('input', function () { showList(input.value); });
+    input.addEventListener('keydown', function (e) {
+      var opts = listEl.querySelectorAll('li');
+      var cur = listEl.querySelector('[aria-selected="true"]');
+      if (e.key === 'Escape') { listEl.hidden = true; return; }
+      if (e.key === 'Enter' && cur) { e.preventDefault(); selectValue(cur.getAttribute('data-value')); return; }
+      if (e.key === 'ArrowDown' && opts.length) {
+        e.preventDefault();
+        var next = cur ? cur.nextElementSibling : opts[0];
+        if (next) { if (cur) cur.removeAttribute('aria-selected'); next.setAttribute('aria-selected', 'true'); next.scrollIntoView({ block: 'nearest' }); }
+        return;
+      }
+      if (e.key === 'ArrowUp' && opts.length) {
+        e.preventDefault();
+        var prev = cur ? cur.previousElementSibling : opts[opts.length - 1];
+        if (prev) { if (cur) cur.removeAttribute('aria-selected'); prev.setAttribute('aria-selected', 'true'); prev.scrollIntoView({ block: 'nearest' }); }
+        return;
+      }
+    });
+    listEl.addEventListener('click', function (e) {
+      var li = e.target.closest('li[data-value]');
+      if (li) selectValue(li.getAttribute('data-value'));
+    });
+    document.addEventListener('click', function (e) {
+      if (wrap && !wrap.contains(e.target)) listEl.hidden = true;
+    });
+  }
+
   function initIndustrySearchable() {
     var input = document.getElementById('filter-industry');
     var listEl = document.getElementById('industry-dropdown-list');
@@ -848,28 +1083,61 @@
     });
   }
 
-  function initCityByCountry() {
+  function initRegionByCountry() {
     var countrySelect = document.getElementById('filter-country');
-    var citySelect = document.getElementById('filter-city');
-    if (!countrySelect || !citySelect) return;
-    function updateCityOptions() {
+    var regionSelect = document.getElementById('filter-city');
+    if (!countrySelect || !regionSelect) return;
+    function updateRegionOptions() {
       var country = countrySelect.value || '';
-      var cities = CITIES_BY_COUNTRY[country] || ['Any'];
-      citySelect.innerHTML = cities.map(function (c) {
+      var regions = REGIONS_BY_COUNTRY[country];
+      if (!regions || !regions.length) {
+        regionSelect.innerHTML = '<option value="">Any region</option>';
+        return;
+      }
+      var opts = ['Any'].concat(regions);
+      regionSelect.innerHTML = opts.map(function (c) {
         return '<option value="' + (c === 'Any' ? '' : escapeHtml(c)) + '">' + escapeHtml(c) + '</option>';
       }).join('');
     }
-    countrySelect.addEventListener('change', updateCityOptions);
-    updateCityOptions();
+    countrySelect.addEventListener('change', updateRegionOptions);
+    global._refreshLinkedinRegionOptions = updateRegionOptions;
+    updateRegionOptions();
   }
 
   function init() {
     var btnGenerate = document.getElementById('btn-generate-leads');
     if (btnGenerate) btnGenerate.addEventListener('click', generateLeads);
 
+    document.querySelectorAll('#page-generate .generate-source-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var src = btn.getAttribute('data-generate-source');
+        if (src !== 'linkedin' && src !== 'google') return;
+        generateLeadSource = src;
+        syncGenerateSourceUI();
+      });
+    });
+    syncGenerateSourceUI();
+
     updateLeadLimitDisplay();
-    initIndustrySearchable();
-    initCityByCountry();
+    applyLinkedinFilterData(buildFallbackLinkedinPayload());
+    loadLinkedinFilterOptions().then(function () {
+      initIndustrySearchable();
+      initSenioritySearchable();
+      initRegionByCountry();
+    });
+
+    document.querySelectorAll('.leads-source-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        leadSourceTab = btn.getAttribute('data-source') || 'all';
+        document.querySelectorAll('.leads-source-tab').forEach(function (b) {
+          var on = b === btn;
+          b.classList.toggle('is-active', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        currentPage = 1;
+        renderLeadsTable();
+      });
+    });
 
     var searchEl = document.getElementById('leads-search');
     if (searchEl) {

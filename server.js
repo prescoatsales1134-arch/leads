@@ -7,6 +7,7 @@
  * Session is stored in httpOnly cookie (access_token). Service role key is never exposed.
  */
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
@@ -504,6 +505,44 @@ app.patch('/api/profiles/:id/lead_limit', function (req, res) {
     });
 });
 
+// GET /api/linkedin-filter-options — Peakydev-aligned industries, countries, regions, seniority, company sizes (LinkedIn generate)
+app.get('/api/linkedin-filter-options', function (req, res) {
+  requireUser(req, res, function () {
+    if (res.headersSent) return;
+    try {
+      var dataDir = path.join(__dirname, 'data');
+      var indPath = path.join(dataDir, 'peakydev-industries-raw.txt');
+      var countriesPath = path.join(dataDir, 'peakydev-countries-raw.txt');
+      var regionsPath = path.join(dataDir, 'peakydev-regions-by-country.json');
+      var industries = fs.readFileSync(indPath, 'utf8').trim().split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+      var countries = fs.readFileSync(countriesPath, 'utf8').trim().split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+      var regionsByCountry = JSON.parse(fs.readFileSync(regionsPath, 'utf8'));
+      var seniority = ['Founder', 'Chairman', 'President', 'CEO', 'CXO', 'Vice President', 'Director', 'Head', 'Manager', 'Senior', 'Junior', 'Entry Level', 'Executive'];
+      var companySizes = [
+        { value: '0 - 1', label: '0 – 1 employees' },
+        { value: '2 - 10', label: '2 – 10' },
+        { value: '11 - 50', label: '11 – 50' },
+        { value: '51 - 200', label: '51 – 200' },
+        { value: '201 - 500', label: '201 – 500' },
+        { value: '501 - 1000', label: '501 – 1,000' },
+        { value: '1001 - 5000', label: '1,001 – 5,000' },
+        { value: '5001 - 10000', label: '5,001 – 10,000' },
+        { value: '10000+', label: '10,000+' }
+      ];
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.json({
+        industries: industries,
+        countries: countries,
+        regionsByCountry: regionsByCountry,
+        seniority: seniority,
+        companySizes: companySizes
+      });
+    } catch (e) {
+      res.status(500).json({ error: e && e.message ? e.message : 'Failed to load LinkedIn filter options' });
+    }
+  });
+});
+
 // GET /api/lead-limit — current user's monthly limit and usage (so they can see remaining)
 app.get('/api/lead-limit', function (req, res) {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
@@ -547,6 +586,24 @@ app.get('/api/stats', function (req, res) {
 
 // ---------- API: leads (per-user history) ----------
 
+function parseN8nWebhookUrl(raw) {
+  raw = (raw || '').trim();
+  var start = raw.indexOf('https://');
+  if (start === -1) start = raw.indexOf('http://');
+  if (start === -1) return '';
+  var prefixLen = raw.slice(start, start + 8) === 'https://' ? 8 : 7;
+  var rest = raw.slice(start + prefixLen);
+  var next = rest.search(/\s|https:\/\/|http:\/\//);
+  var path = (next === -1 ? rest : rest.slice(0, next)).replace(/#.*$/, '').trim();
+  if (!path) return '';
+  return (raw.slice(start, start + 8) === 'https://' ? 'https://' : 'http://') + path;
+}
+
+function normalizeLeadSource(v) {
+  if (v === 'google' || (v && String(v).toLowerCase() === 'google')) return 'google';
+  return 'linkedin';
+}
+
 function leadToRow(userId, lead) {
   return {
     user_id: userId,
@@ -560,7 +617,8 @@ function leadToRow(userId, lead) {
     linkedin: lead.linkedin || null,
     company_domain: lead.companyDomain || null,
     country: lead.country || null,
-    status: lead.status || 'New'
+    status: lead.status || 'New',
+    lead_source: normalizeLeadSource(lead.leadSource || lead.lead_source)
   };
 }
 
@@ -577,14 +635,15 @@ function rowToLead(row) {
     companyDomain: row.company_domain || '',
     country: row.country || '',
     status: row.status || 'New',
-    createdAt: row.created_at || null
+    createdAt: row.created_at || null,
+    leadSource: normalizeLeadSource(row.lead_source)
   };
 }
 
 app.get('/api/leads', function (req, res) {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
   requireUser(req, res, function (user) {
-    var baseSelect = 'lead_id, company_name, contact_name, job_title, industry, email, phone, linkedin, company_domain, country, status';
+    var baseSelect = 'lead_id, company_name, contact_name, job_title, industry, email, phone, linkedin, company_domain, country, status, lead_source';
     function sendRows(rows) {
       res.json((rows || []).map(rowToLead));
     }
@@ -592,10 +651,23 @@ app.get('/api/leads', function (req, res) {
       .then(function (r) {
         if (r.error) {
           var msg = (r.error.message || '').toLowerCase();
-          if (msg.indexOf('created_at') !== -1 || msg.indexOf('column') !== -1) {
-            return supabaseAdmin.from('user_leads').select(baseSelect).eq('user_id', user.id).order('id', { ascending: false })
+          if (msg.indexOf('lead_source') !== -1) {
+            return supabaseAdmin.from('user_leads').select('lead_id, company_name, contact_name, job_title, industry, email, phone, linkedin, company_domain, country, status, created_at').eq('user_id', user.id).order('created_at', { ascending: false })
               .then(function (r2) {
                 if (r2.error) return res.status(500).json({ error: r2.error.message });
+                sendRows(r2.data);
+              });
+          }
+          if (msg.indexOf('created_at') !== -1 || msg.indexOf('column') !== -1) {
+            return supabaseAdmin.from('user_leads').select('lead_id, company_name, contact_name, job_title, industry, email, phone, linkedin, company_domain, country, status, lead_source').eq('user_id', user.id).order('id', { ascending: false })
+              .then(function (r2) {
+                if (r2.error) {
+                  return supabaseAdmin.from('user_leads').select('lead_id, company_name, contact_name, job_title, industry, email, phone, linkedin, company_domain, country, status').eq('user_id', user.id).order('id', { ascending: false })
+                    .then(function (r3) {
+                      if (r3.error) return res.status(500).json({ error: r3.error.message });
+                      sendRows(r3.data);
+                    });
+                }
                 sendRows(r2.data);
               });
           }
@@ -638,7 +710,29 @@ app.post('/api/leads', function (req, res) {
       supabaseAdmin.from('user_leads').upsert(toSave, { onConflict: ['user_id', 'lead_id'] })
       .then(function (r) {
         if (res.headersSent) return;
-        if (r.error) return res.status(500).json({ error: r.error.message });
+        if (r.error) {
+          var em = (r.error.message || '').toLowerCase();
+          if (em.indexOf('lead_source') !== -1) {
+            var stripped = toSave.map(function (row) {
+              var o = {};
+              for (var k in row) {
+                if (Object.prototype.hasOwnProperty.call(row, k) && k !== 'lead_source') o[k] = row[k];
+              }
+              return o;
+            });
+            return supabaseAdmin.from('user_leads').upsert(stripped, { onConflict: ['user_id', 'lead_id'] }).then(function (r2) {
+              if (res.headersSent) return;
+              if (r2.error) return res.status(500).json({ error: r2.error.message });
+              var body = { saved: stripped.length };
+              if (capped) body.capped = true;
+              if (capped && rows.length > stripped.length) body.notSaved = rows.length - stripped.length;
+              res.status(201).json(body);
+            }).catch(function () {
+              if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+            });
+          }
+          return res.status(500).json({ error: r.error.message });
+        }
         var body = { saved: toSave.length };
         if (capped) body.capped = true;
         if (capped && rows.length > toSave.length) body.notSaved = rows.length - toSave.length;
@@ -654,24 +748,21 @@ app.post('/api/leads', function (req, res) {
 });
 
 // POST /api/generate-leads — check lead limit, then proxy to n8n (workflow runs only if under limit)
+// Body may include source: "linkedin" | "google" (default linkedin). "source" is not forwarded to n8n.
 app.post('/api/generate-leads', function (req, res) {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
-  var raw = (process.env.N8N_GENERATE_LEADS_WEBHOOK || '').trim();
-  var start = raw.indexOf('https://');
-  if (start === -1) start = raw.indexOf('http://');
-  var webhookUrl = '';
-  if (start !== -1) {
-    var prefix = raw.slice(start, start + 8) === 'https://' ? 8 : 7;
-    var rest = raw.slice(start + prefix);
-    var next = rest.search(/\s|https:\/\/|http:\/\//);
-    webhookUrl = (next === -1 ? rest : rest.slice(0, next)).replace(/#.*$/, '').trim();
-    if (webhookUrl) webhookUrl = (raw.slice(start, start + 8) === 'https://' ? 'https://' : 'http://') + webhookUrl;
-  }
-  if (!webhookUrl || !webhookUrl.startsWith('http')) {
-    return res.status(503).json({ error: 'Generate leads webhook not configured. Add N8N_GENERATE_LEADS_WEBHOOK to .env.' });
-  }
   requireUser(req, res, function (user) {
     if (res.headersSent) return;
+    var body = req.body && typeof req.body === 'object' ? req.body : {};
+    var source = (body.source && String(body.source).toLowerCase() === 'google') ? 'google' : 'linkedin';
+    var envName = source === 'google' ? 'N8N_GENERATE_GOOGLE_LEADS_WEBHOOK' : 'N8N_GENERATE_LEADS_WEBHOOK';
+    var webhookUrl = parseN8nWebhookUrl(process.env[envName] || '');
+    if (!webhookUrl || !webhookUrl.startsWith('http')) {
+      var err503 = source === 'google'
+        ? 'Google generate webhook not configured. Add N8N_GENERATE_GOOGLE_LEADS_WEBHOOK to .env.'
+        : 'Generate leads webhook not configured. Add N8N_GENERATE_LEADS_WEBHOOK to .env.';
+      return res.status(503).json({ error: err503 });
+    }
     getLeadLimitAndUsage(supabaseAdmin, user.id).then(function (info) {
       var limit = info.limit;
       var used = info.used;
@@ -679,7 +770,6 @@ app.post('/api/generate-leads', function (req, res) {
         var msg = 'You have reached your lead generation limit for this month (' + used + '/' + limit + '). It resets at the start of next month.';
         return res.status(403).json({ error: msg });
       }
-      var body = req.body && typeof req.body === 'object' ? req.body : {};
       var maxResults = body.maxResults != null ? parseInt(body.maxResults, 10) : (body.max_results != null ? parseInt(body.max_results, 10) : null);
       if (limit != null && typeof maxResults === 'number' && !isNaN(maxResults) && maxResults > 0) {
         var remaining = Math.max(0, limit - used);
@@ -688,7 +778,10 @@ app.post('/api/generate-leads', function (req, res) {
           return res.status(403).json({ error: msg2 });
         }
       }
-      var payload = body;
+      var payload = {};
+      for (var k in body) {
+        if (Object.prototype.hasOwnProperty.call(body, k) && k !== 'source') payload[k] = body[k];
+      }
       fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -706,60 +799,6 @@ app.post('/api/generate-leads', function (req, res) {
           var data = _ref.data;
           var raw = _ref.raw;
           if (!ok) return res.status(502).json({ error: (data && (data.error || data.message)) || 'Generate leads failed' });
-          res.setHeader('Content-Type', 'application/json');
-          res.send(raw || '[]');
-        })
-        .catch(function (err) {
-          if (!res.headersSent) res.status(502).json({ error: err.message || 'Failed to generate leads.' });
-        });
-    });
-  });
-});
-
-// POST /api/generate-leads — check lead limit, then proxy to n8n (workflow runs only if under limit)
-app.post('/api/generate-leads', function (req, res) {
-  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
-  var raw = (process.env.N8N_GENERATE_LEADS_WEBHOOK || '').trim();
-  var start = raw.indexOf('https://');
-  if (start === -1) start = raw.indexOf('http://');
-  var webhookUrl = '';
-  if (start !== -1) {
-    var prefix = raw.slice(start, start + 8) === 'https://' ? 8 : 7;
-    var rest = raw.slice(start + prefix);
-    var next = rest.search(/\s|https:\/\/|http:\/\//);
-    webhookUrl = (next === -1 ? rest : rest.slice(0, next)).replace(/#.*$/, '').trim();
-    if (webhookUrl) webhookUrl = (raw.slice(start, start + 8) === 'https://' ? 'https://' : 'http://') + webhookUrl;
-  }
-  if (!webhookUrl || !webhookUrl.startsWith('http')) {
-    return res.status(503).json({ error: 'Generate leads webhook not configured. Add N8N_GENERATE_LEADS_WEBHOOK to .env.' });
-  }
-  requireUser(req, res, function (user) {
-    if (res.headersSent) return;
-    getLeadLimitAndUsage(supabaseAdmin, user.id).then(function (info) {
-      var limit = info.limit;
-      var used = info.used;
-      if (limit != null && used >= limit) {
-        var msg = 'You have reached your lead generation limit for this month (' + used + '/' + limit + '). It resets at the start of next month.';
-        return res.status(403).json({ error: msg });
-      }
-      var body = req.body && typeof req.body === 'object' ? req.body : {};
-      var payload = body;
-      fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-        .then(function (wh) {
-          return wh.text().then(function (txt) {
-            var data;
-            try { data = txt && txt.trim() ? JSON.parse(txt) : null; } catch (e) { data = null; }
-            return { ok: wh.ok, data: data, raw: txt || '' };
-          });
-        })
-        .then(function (_ref) {
-          var ok = _ref.ok;
-          var raw = _ref.raw;
-          if (!ok) return res.status(502).json({ error: 'Generate leads failed' });
           res.setHeader('Content-Type', 'application/json');
           res.send(raw || '[]');
         })

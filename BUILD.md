@@ -68,11 +68,16 @@ The **Express server** reads `.env` on startup and exposes only the client-safe 
      Never put the **service_role** key in `.env` for this app; the frontend must only use the anon key.
 
    - **`N8N_GENERATE_LEADS_WEBHOOK`**  
-     Full URL of the n8n webhook that **generates leads**. The app will send a POST request with a JSON body like:
+     Full URL of the n8n webhook that **generates LinkedIn-style leads**. The app will send a POST request with a JSON body like:
      `{ "industry", "country", "city", "companySize", "keywords", "jobTitle", "emailAvailable", "phoneAvailable" }`.  
      Your n8n workflow should accept this body and return a JSON array of leads (or an object with a `leads` array).  
      Example: `https://your-n8n.com/webhook/generate-leads`  
-     If you leave it empty, the “Generate Leads” button will show a toast that the webhook is not configured.
+     If you leave it empty, the “Generate Leads” button will show a toast that the webhook is not configured.  
+     **Step-by-step (Peakydev LinkedIn + optional Google workflow, Apify, Code nodes):** see **[N8N_LINKEDIN_GOOGLE_LEADS_WORKFLOWS.md](./N8N_LINKEDIN_GOOGLE_LEADS_WORKFLOWS.md)**.
+
+   - **`N8N_GENERATE_GOOGLE_LEADS_WEBHOOK`**  
+     Second workflow for Google/Maps (or other) lead generation when the app sends `source: "google"` (the server strips `source` before n8n).  
+     Configure the same way as above; see **[N8N_LINKEDIN_GOOGLE_LEADS_WORKFLOWS.md](./N8N_LINKEDIN_GOOGLE_LEADS_WORKFLOWS.md)**.
 
    - **`N8N_CHATBOT_WEBHOOK`**  
      Full URL of the n8n webhook for the **AI Assistant** chat. The app sends:

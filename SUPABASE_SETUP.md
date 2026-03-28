@@ -128,6 +128,7 @@ create table public.user_leads (
   company_domain text,
   country text,
   status text default 'New',
+  lead_source text not null default 'linkedin' check (lead_source in ('linkedin', 'google')),
   created_at timestamptz default now(),
   unique (user_id, lead_id)
 );
@@ -171,6 +172,18 @@ ALTER TABLE public.user_leads ADD COLUMN IF NOT EXISTS company_domain text;
 ```sql
 ALTER TABLE public.user_leads ADD COLUMN IF NOT EXISTS linkedin text;
 ```
+
+**To tag each row as LinkedIn vs Google leads** (dashboard filters and HubSpot `leadSource`), run once:
+
+```sql
+ALTER TABLE public.user_leads ADD COLUMN IF NOT EXISTS lead_source text NOT NULL DEFAULT 'linkedin';
+-- Optional: only allow known values (skip if you prefer a plain text column)
+ALTER TABLE public.user_leads DROP CONSTRAINT IF EXISTS user_leads_lead_source_check;
+ALTER TABLE public.user_leads ADD CONSTRAINT user_leads_lead_source_check
+  CHECK (lead_source IN ('linkedin', 'google'));
+```
+
+Existing rows get `linkedin` from the default. New Google leads are saved as `google` by the app.
 
 **If you want admins to set a monthly lead generation limit per user**, run this once to add the column to `profiles`:
 

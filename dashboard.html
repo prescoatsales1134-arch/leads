@@ -106,75 +106,66 @@
       <section id="page-generate" class="page">
         <h1 class="page-title">Generate Leads</h1>
         <div class="generate-layout">
-          <div class="card filters-panel">
+          <div class="card filters-panel" data-generate-source="linkedin">
             <div class="filters-panel-header">
               <h2 class="card-title">Filters</h2>
               <span id="lead-limit-display" class="lead-limit-display text-muted" aria-live="polite"></span>
             </div>
+            <div class="generate-source-toggle" role="group" aria-label="Lead data source">
+              <button type="button" class="generate-source-btn is-active" data-generate-source="linkedin" aria-pressed="true">Apollo.io</button>
+              <button type="button" class="generate-source-btn" data-generate-source="google" aria-pressed="false">Google Maps</button>
+            </div>
+            <p class="text-muted filter-linkedin-note" style="font-size: 0.85rem; margin: 0 0 0.75rem;">Apollo.io (Peakydev): industry, country, region, company size, and seniority must match the actor. Separate multiple values with commas (e.g. two industries or countries). Use <strong>Keywords</strong> for a city or metro (not sent in the Apify body—use region + country for location).</p>
+            <p class="text-muted filter-google-note" style="font-size: 0.85rem; margin: 0 0 0.75rem;">Google Maps: set <strong>Industry</strong> as search terms (comma-separated for multiple), <strong>Country</strong> and <strong>City</strong> for location (e.g. New York, USA). Max results maps to places per search.</p>
             <div class="form-grid">
               <label class="field">
                 <span>Industry</span>
                 <div class="searchable-dropdown-wrap" id="industry-dropdown-wrap">
-                  <input type="text" id="filter-industry" placeholder="Type to search industry…" autocomplete="off" />
+                  <input type="text" id="filter-industry" placeholder="Search Peakydev industries…" autocomplete="off" />
                   <ul class="searchable-dropdown-list" id="industry-dropdown-list" role="listbox" hidden></ul>
                 </div>
               </label>
               <label class="field">
                 <span>Country</span>
                 <select id="filter-country">
-                  <option value="">Any</option>
-                  <option value="United States">United States</option>
-                  <option value="United Kingdom">United Kingdom</option>
-                  <option value="Canada">Canada</option>
-                  <option value="Australia">Australia</option>
-                  <option value="Germany">Germany</option>
-                  <option value="France">France</option>
-                  <option value="India">India</option>
-                  <option value="China">China</option>
-                  <option value="Japan">Japan</option>
-                  <option value="Brazil">Brazil</option>
-                  <option value="Mexico">Mexico</option>
-                  <option value="Spain">Spain</option>
-                  <option value="Italy">Italy</option>
-                  <option value="Netherlands">Netherlands</option>
-                  <option value="Sweden">Sweden</option>
-                  <option value="Switzerland">Switzerland</option>
-                  <option value="Singapore">Singapore</option>
-                  <option value="Israel">Israel</option>
-                  <option value="United Arab Emirates">United Arab Emirates</option>
-                  <option value="South Korea">South Korea</option>
+                  <option value="">Any country</option>
                 </select>
               </label>
-              <label class="field">
-                <span>City</span>
-                <select id="filter-city">
-                  <option value="">Any</option>
+              <label class="field linkedin-only-generate">
+                <span>State / province / region</span>
+                <select id="filter-city" title="Peakydev personState — pick a country first">
+                  <option value="">Any region</option>
                 </select>
+              </label>
+              <label class="field google-only-generate">
+                <span>City</span>
+                <input type="text" id="filter-google-city" placeholder="e.g. New York" autocomplete="off" title="Combined with country for locationQuery" />
               </label>
               <label class="field">
                 <span>Max results</span>
                 <input type="number" id="filter-maxResults" min="1" max="10000" value="50" placeholder="e.g. 50" title="Number of leads to generate (max depends on your monthly limit)" />
               </label>
-              <label class="field">
-                <span>Company Size</span>
-                <select id="filter-companySize">
-                  <option value="1-10">1–10</option>
-                  <option value="11-50">11–50</option>
-                  <option value="51-200">51–200</option>
-                  <option value="201-500">201–500</option>
-                  <option value="501-1000">501–1,000</option>
-                  <option value="1001-5000">1,001–5,000</option>
-                  <option value="5001-10000">5,001–10,000</option>
-                  <option value="10001+">10,001+</option>
+              <label class="field linkedin-only-generate">
+                <span>Company size</span>
+                <select id="filter-companySize" title="Peakydev companyEmployeeSize">
+                  <option value="">Any company size</option>
+                  <option value="2 - 10">2 – 10</option>
                 </select>
               </label>
-              <label class="field">
-                <span>Keywords</span>
-                <input type="text" id="filter-keywords" placeholder="e.g. hiring, growth" />
+              <label class="field linkedin-only-generate">
+                <span>Seniority</span>
+                <div class="searchable-dropdown-wrap" id="seniority-dropdown-wrap">
+                  <input type="text" id="filter-seniority" placeholder="Optional — e.g. CEO, Director (comma-separated)" autocomplete="off" />
+                  <ul class="searchable-dropdown-list" id="seniority-dropdown-list" role="listbox" hidden></ul>
+                </div>
               </label>
-              <label class="field">
-                <span>Job Title</span>
-                <input type="text" id="filter-jobTitle" placeholder="e.g. Owner, Director" />
+              <label class="field linkedin-only-generate">
+                <span>Keywords</span>
+                <input type="text" id="filter-keywords" placeholder="City, metro, or extra terms (e.g. Los Angeles)" />
+              </label>
+              <label class="field linkedin-only-generate">
+                <span>Job title</span>
+                <input type="text" id="filter-jobTitle" placeholder="e.g. Owner, Marketing Manager" />
               </label>
               <label class="field field-check">
                 <input type="checkbox" id="filter-emailAvailable" />
@@ -198,7 +189,7 @@
               </div>
             </div>
             <div id="generate-success-banner" class="generate-success-banner" hidden aria-live="polite">
-              <span id="generate-success-banner-text">✅ <span id="generate-success-count">0</span> LinkedIn Leads Generated Successfully</span>
+              <span id="generate-success-banner-text">✅ <span id="generate-success-count">0</span> <span id="generate-success-suffix">Apollo.io Leads Generated Successfully</span></span>
             </div>
             <div id="generate-next-step-card" class="next-step-card" hidden>
               <h3 class="next-step-title">🚀 What would you like to do next?</h3>
@@ -248,6 +239,11 @@
       <section id="page-leads" class="page">
         <h1 class="page-title">Leads</h1>
         <div class="card">
+          <div class="leads-source-tabs" role="tablist" aria-label="Filter leads by source">
+            <button type="button" class="btn btn-ghost btn-sm leads-source-tab is-active" data-source="all" role="tab" aria-selected="true">All</button>
+            <button type="button" class="btn btn-ghost btn-sm leads-source-tab" data-source="linkedin" role="tab" aria-selected="false">LinkedIn</button>
+            <button type="button" class="btn btn-ghost btn-sm leads-source-tab" data-source="google" role="tab" aria-selected="false">Google</button>
+          </div>
           <div class="table-toolbar">
             <div class="search-wrap leads-toolbar-filters">
               <input type="search" id="leads-search" placeholder="Search leads…" class="input-search" />
@@ -275,6 +271,7 @@
                   <th>Contact Name</th>
                   <th>Job Title</th>
                   <th>Industry</th>
+                  <th>Source</th>
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Country</th>

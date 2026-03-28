@@ -23,7 +23,8 @@ Configure these in `.env` and regenerate `config.js`:
 
 | Variable | Purpose |
 |----------|--------|
-| `N8N_GENERATE_LEADS_WEBHOOK` | POST filters → returns leads |
+| `N8N_GENERATE_LEADS_WEBHOOK` | POST filters → returns leads (LinkedIn / Peakydev workflow) |
+| `N8N_GENERATE_GOOGLE_LEADS_WEBHOOK` | POST filters → returns leads (Google/Maps workflow; see [N8N_LINKEDIN_GOOGLE_LEADS_WORKFLOWS.md](./N8N_LINKEDIN_GOOGLE_LEADS_WORKFLOWS.md)) |
 | `N8N_CHATBOT_WEBHOOK` | POST `{ message, conversation_id }` → returns reply |
 | `N8N_EXPORT_WEBHOOK` | Optional export hook |
 | `N8N_SYNC_HUBSPOT_WEBHOOK` | POST lead object → sync to HubSpot |

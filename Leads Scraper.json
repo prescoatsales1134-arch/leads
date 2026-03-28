@@ -1,0 +1,178 @@
+{
+  "name": "Leads Scraper (LinkedIn — replace Code nodes with n8n-peakydev-linkedin-*.js)",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.apify.com/v2/acts/peakydev~leads-scraper-ppe/run-sync-get-dataset-items?token=' + $env.APIFY_TOKEN }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        560,
+        -128
+      ],
+      "id": "dfeda515-80ed-4667-af52-df10ac1f9db9",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate_leads",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        144,
+        -128
+      ],
+      "id": "6672f09a-96d9-431e-af97-2817e4dffdbb",
+      "name": "Webhook",
+      "webhookId": "8c41f784-048f-43f1-8fc8-6e2ce4abe383"
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = $input.all().map(i => i.json);\n\nfunction getEmail(lead) {\n  if (lead.work_email) return lead.work_email;\n  if (lead.emails?.length) return lead.emails[0].address;\n  return null;\n}\n\nfunction getPhone(lead) {\n  if (lead.mobile_phone) return lead.mobile_phone;\n  if (lead.phone_numbers?.length) return lead.phone_numbers[0];\n  return null;\n}\n\nfunction getLinkedIn(lead) {\n  if (lead.linkedin_url) return lead.linkedin_url;\n\n  // fallback in case it exists only inside profiles\n  const linkedinProfile = lead.profiles?.find(p => p.network === 'linkedin');\n  return linkedinProfile?.url || null;\n}\n\nfunction getCompanyDomain(lead) {\n  // 1) Prefer explicit company website\n  let domain = (lead.job_company_website || '').trim().toLowerCase();\n  if (domain) {\n    // handle cases like \"https://uno.edu\" or \"www.uno.edu\"\n    if (domain.startsWith('http://') || domain.startsWith('https://')) {\n      try {\n        domain = new URL(domain).hostname;\n      } catch (e) {}\n    }\n    domain = domain.replace(/^www\\./, '');\n    return domain;\n  }\n\n  // 2) Fallback from work_email or first email\n  const email =\n    lead.work_email ||\n    (lead.emails?.length ? lead.emails[0].address : null);\n\n  if (email && email.includes('@')) {\n    return email.split('@')[1].trim().toLowerCase();\n  }\n\n  return null;\n}\n\nconst normalized = leads.map(lead => ({\n  companyName: lead.job_company_name || null,\n  contactName: lead.full_name || null,\n  jobTitle: lead.job_title || null,\n  industry: lead.industry || null,\n  email: getEmail(lead),\n  phone: getPhone(lead),\n  linkedin: getLinkedIn(lead),\n  country: lead.location_country || lead.job_company_location_country || null,\n  companyDomain: getCompanyDomain(lead),\n}));\n\nreturn [\n  {\n    json: {\n      leads: normalized,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        -128
+      ],
+      "id": "99ad8cbd-ce8a-45de-9298-d366008639f1",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        976,
+        -128
+      ],
+      "id": "85961e47-1cf1-49f5-b57b-387ab5593275",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "function splitAndTrim(str) {\n  if (str == null || str === '') return [];\n  return String(str)\n    .split(',')\n    .map(function (s) { return s.trim(); })\n    .filter(Boolean);\n}\n\nfunction firstOrEmpty(arr) {\n  return Array.isArray(arr) && arr.length > 0 ? arr[0] : '';\n}\n\nconst raw = $input.first().json;\nconst body = raw.body || raw;\n\nconst industry = body.industry != null ? String(body.industry).trim() : '';\nconst country = body.country != null ? String(body.country).trim() : '';\nconst city = body.city != null ? String(body.city).trim() : '';\nconst maxResults = Math.max(1, parseInt(body.maxResults, 10) || 5);\nconst companySize = body.companySize != null ? String(body.companySize).trim() : '';\nconst keywords = body.keywords != null ? String(body.keywords).trim() : '';\nconst jobTitle = body.jobTitle != null ? String(body.jobTitle).trim() : '';\nconst emailAvailable = !!body.emailAvailable;\nconst phoneAvailable = !!body.phoneAvailable;\n\n// Build arrays: split comma-separated values (e.g. \"CEO, Title Officer\" → [\"CEO\", \"Title Officer\"], \"real estate, closing\" → [\"real estate\", \"closing\"])\nconst industries = industry ? splitAndTrim(industry) : [];\nconst person_location_country = country ? splitAndTrim(country) : [];\nconst person_location_locality = city ? splitAndTrim(city) : [];\nconst job_titles = jobTitle ? splitAndTrim(jobTitle) : [];\nconst industry_keywords = keywords ? splitAndTrim(keywords) : [];\n// companySize often comes as \"1-10\" or \"11-50\" — single value, but API may want array\nconst employee_size = companySize ? [companySize] : [];\n\nconst apiBody = {\n  employee_size: employee_size,\n  include_emails: emailAvailable,\n  include_phones: phoneAvailable,\n  industries: industries.length ? industries : [],\n  industry_keywords: industry_keywords,\n  job_titles: job_titles,\n  person_location_country: person_location_country,\n  person_location_locality: person_location_locality,\n  max_results: maxResults\n};\n\nreturn [{ json: { body: apiBody } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        -128
+      ],
+      "id": "a0e4ada9-4152-4dee-a674-e313f669e9f7",
+      "name": "Code in JavaScript1"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv873320.hstgr.cloud",
+            "user-agent": "node",
+            "content-length": "195",
+            "accept": "*/*",
+            "accept-encoding": "br, gzip, deflate",
+            "accept-language": "*",
+            "content-type": "application/json",
+            "sec-fetch-mode": "cors",
+            "x-forwarded-for": "58.65.221.10",
+            "x-forwarded-host": "n8n.srv873320.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "4374a72c164c",
+            "x-real-ip": "58.65.221.10"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "industry": "Advertising Services",
+            "country": "United States",
+            "city": "Los Angeles",
+            "maxResults": 5,
+            "companySize": "1-10",
+            "keywords": "",
+            "jobTitle": "Owner",
+            "emailAvailable": true,
+            "phoneAvailable": true
+          },
+          "webhookUrl": "https://n8n.srv873320.hstgr.cloud/webhook/generate_leads",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8a8cae8d-11b3-4e0c-8b99-62eba50ae943",
+  "meta": {
+    "instanceId": "30ffd6d8b5f17095e970d192c0afc20eb25acce69678a480b9839d498b9e660f"
+  },
+  "id": "PFqAYgk3IBTCq4sC",
+  "tags": []
+}
