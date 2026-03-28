@@ -26,13 +26,13 @@ Each lead should match the shape your app saves (see **Normalized lead object** 
    ```
 3. Edit **`.env`**. Required for login and the dashboard API:
    - **`SUPABASE_URL`**, **`SUPABASE_ANON_KEY`**, **`SUPABASE_SERVICE_ROLE_KEY`**
-   - After n8n workflows exist: **`N8N_GENERATE_LEADS_WEBHOOK`** (Apollo) and **`N8N_GENERATE_GOOGLE_LEADS_WEBHOOK`** (Google)
+   - After n8n workflows exist: **`N8N_GENERATE_LEADS_WEBHOOK`** (LinkedIn Leads) and **`N8N_GENERATE_GOOGLE_LEADS_WEBHOOK`** (Google Leads)
 4. Full variable list and Supabase + Google OAuth setup: **[BUILD.md](./BUILD.md)**, **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**, **[GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md)**.
 5. Start the server:
    ```bash
    npm start
    ```
-6. Open **http://localhost:3000** (or **`http://localhost:PORT`** if you set **`PORT`** in `.env`). Sign in, then open **Generate** and choose **Apollo.io** or **Google Maps**.
+6. Open **http://localhost:3000** (or **`http://localhost:PORT`** if you set **`PORT`** in `.env`). Sign in, then open **Generate** and choose **LinkedIn Leads** or **Google Leads**.
 
 The Express server reads **`.env`** directly for generate webhooks. You **do not** need **`npm run config`** for lead generation—that script only rebuilds optional **`config.js`** for a subset of client keys; **`POST /api/generate-leads`** uses **`process.env`** on the server.
 
@@ -44,10 +44,10 @@ The Express server reads **`.env`** directly for generate webhooks. You **do not
 
 | Repo file | n8n node | Workflow |
 |-----------|----------|----------|
-| **`n8n-peakydev-linkedin-transform.js`** | Code (Transform), after Webhook | Apollo / LinkedIn |
-| **`n8n-peakydev-linkedin-normalize.js`** | Code (Normalize), after HTTP Request | Apollo / LinkedIn |
-| **`n8n-google-leads-transform.js`** | Code (Transform), after Webhook | Google Maps |
-| **`n8n-google-leads-normalize.js`** | Code (Normalize), after HTTP Request | Google Maps |
+| **`n8n-peakydev-linkedin-transform.js`** | Code (Transform), after Webhook | LinkedIn Leads |
+| **`n8n-peakydev-linkedin-normalize.js`** | Code (Normalize), after HTTP Request | LinkedIn Leads |
+| **`n8n-google-leads-transform.js`** | Code (Transform), after Webhook | Google Leads |
+| **`n8n-google-leads-normalize.js`** | Code (Normalize), after HTTP Request | Google Leads |
 
 Paste each file’s **full contents** into the matching **Code** node (JavaScript). In Code node settings, use **“Run Once for All Items”** where available.
 
@@ -59,7 +59,7 @@ Paste each file’s **full contents** into the matching **Code** node (JavaScrip
 
 ---
 
-### Workflow A — Apollo.io (Peakydev LinkedIn)
+### Workflow A — LinkedIn Leads (Peakydev)
 
 **Node chain:** `Webhook` → `Code (transform)` → `HTTP Request (Apify)` → `Code (normalize)` → `Respond to Webhook`
 
@@ -71,7 +71,7 @@ Paste each file’s **full contents** into the matching **Code** node (JavaScrip
 
 2. **Code — Transform dashboard → Apify body**  
    - Copy **`n8n-peakydev-linkedin-transform.js`** from this repo into the node.  
-   - Input is the JSON body your app posts (see **What the app sends** → Apollo). The node outputs **`{ body: { ... } }`** for the next step.
+   - Input is the JSON body your app posts (see **What the app sends** → LinkedIn Leads). The node outputs **`{ body: { ... } }`** for the next step.
 
 3. **HTTP Request**
    - **Method:** POST  
@@ -95,12 +95,12 @@ Paste each file’s **full contents** into the matching **Code** node (JavaScrip
 ```bash
 curl -s -X POST "https://YOUR-N8N-HOST/webhook/generate-leads-peakydev" \
   -H "Content-Type: application/json" \
-  -d '{"industry":"Real Estate","country":"United States","personState":"","city":"","maxResults":100,"companySize":"11 - 50","keywords":"","jobTitle":"","seniority":"CEO","emailAvailable":true,"phoneAvailable":false}'
+  -d '{"industry":"Real Estate","country":"United States","personState":"","city":"","maxResults":100,"companySize":"11 - 50","keywords":"","seniority":"CEO","emailAvailable":true,"phoneAvailable":false}'
 ```
 
 ---
 
-### Workflow B — Google Maps
+### Workflow B — Google Leads
 
 **Same node pattern** as A, but a **different** Webhook path and URL in **`.env`** as **`N8N_GENERATE_GOOGLE_LEADS_WEBHOOK`**.
 
@@ -129,8 +129,8 @@ curl -s -X POST "https://YOUR-N8N-HOST/webhook/generate-google-leads" \
 ### Wire the dashboard
 
 1. Set both webhook URLs in **`.env`**, restart **`npm start`**.  
-2. **Generate** → **Apollo.io** → server uses **`N8N_GENERATE_LEADS_WEBHOOK`**.  
-3. **Generate** → **Google Maps** → server uses **`N8N_GENERATE_GOOGLE_LEADS_WEBHOOK`**.  
+2. **Generate** → **LinkedIn Leads** → server uses **`N8N_GENERATE_LEADS_WEBHOOK`**.  
+3. **Generate** → **Google Leads** → server uses **`N8N_GENERATE_GOOGLE_LEADS_WEBHOOK`**.  
 4. The app always sends **`source`** in the browser request; the **server removes `source`** before calling n8n, so each workflow only sees the filter fields.
 
 ### Troubleshooting
@@ -170,11 +170,11 @@ The Generate form uses **Keywords** for a specific **city / metro** (e.g. Los An
 
 ## What the app sends
 
-The Generate tab has **Apollo.io** vs **Google Maps**. The browser always sends **`source`**: **`"linkedin"`** (Apollo) or **`"google"`**. The app server **strips `source`** before POSTing to n8n.
+The Generate tab has **LinkedIn Leads** vs **Google Leads**. The browser always sends **`source`**: **`"linkedin"`** or **`"google"`**. The app server **strips `source`** before POSTing to n8n.
 
-### Apollo.io (LinkedIn / Peakydev) — `source: "linkedin"`
+### LinkedIn Leads (Peakydev) — `source: "linkedin"`
 
-Full filter form; **comma-separated** text in Industry / Country / Seniority becomes multiple values in the n8n transform.
+Full filter form; **comma-separated** text in Industry / Country / **Job title** (Peakydev seniority enums) becomes multiple values in the n8n transform. The UI label is **Job title**; the webhook field is **`seniority`** only (no separate `jobTitle`).
 
 ```json
 {
@@ -185,7 +185,6 @@ Full filter form; **comma-separated** text in Industry / Country / Seniority bec
   "maxResults": 100,
   "companySize": "11 - 50",
   "keywords": "Los Angeles",
-  "jobTitle": "Marketing Manager",
   "seniority": "CEO, Founder",
   "emailAvailable": true,
   "phoneAvailable": true
@@ -210,7 +209,7 @@ When **`emailAvailable`** is false, omit **`contactEmailStatus`** in the transfo
 
 The template does **not** send **`personState`**, **`industryKeywords`**, or **`personTitle`** in this contract; extend the Code node if your actor still needs them.
 
-### Google Maps — `source: "google"`
+### Google Leads — `source: "google"`
 
 Slim payload (City is free text; Industry supports comma-separated search strings):
 

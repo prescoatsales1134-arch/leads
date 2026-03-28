@@ -1,5 +1,5 @@
 /**
- * n8n Code node: dashboard body (Google Maps mode) → Google Maps / Places Apify actor input.
+ * n8n Code node: dashboard body (Google Leads mode) → Google Maps / Places Apify actor input.
  * Place AFTER Webhook, BEFORE HTTP Request.
  *
  * Dashboard sends: industry, country, city (free text), maxResults, emailAvailable, phoneAvailable.

@@ -1,9 +1,9 @@
 /**
- * n8n Code node: dashboard webhook body → Peakydev / Apollo-style actor input JSON.
+ * n8n Code node: dashboard webhook body → Peakydev / LinkedIn-style actor input JSON.
  * Place AFTER Webhook, BEFORE HTTP Request (Apify run-sync-get-dataset-items).
  *
- * Dashboard sends (Apollo.io mode): industry, country, personState/city (region), maxResults,
- * companySize (Peakydev companyEmployeeSize string), keywords, jobTitle, seniority,
+ * Dashboard sends (LinkedIn Leads mode): industry, country, personState/city (region), maxResults,
+ * companySize (Peakydev companyEmployeeSize string), keywords, seniority (UI: Job title — Peakydev enums),
  * emailAvailable, phoneAvailable.
  *
  * This node outputs { body: { ... } } where `body` is the Apify POST JSON shape:
@@ -11,7 +11,7 @@
  * seniority[], totalResults
  *
  * Comma-separated industry / country / seniority in the dashboard become arrays.
- * Keywords and job title are not included in this contract (extend here if your actor needs them).
+ * Keywords are not included in this contract (extend here if your actor needs them).
  *
  * HTTP Request: JSON body = {{ JSON.stringify($json.body) }} or equivalent so the request body is $json.body.
  */

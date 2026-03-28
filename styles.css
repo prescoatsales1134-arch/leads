@@ -1968,7 +1968,7 @@ body.modal-open {
   border-color: var(--primary);
 }
 
-/* ----- Generate: Apollo.io vs Google Maps ----- */
+/* ----- Generate: LinkedIn Leads vs Google Leads ----- */
 .generate-source-toggle {
   display: inline-flex;
   margin: 0 0 0.75rem;
@@ -2002,13 +2002,11 @@ body.modal-open {
   box-shadow: var(--card-shadow);
 }
 
-#page-generate .filters-panel[data-generate-source="linkedin"] .google-only-generate,
-#page-generate .filters-panel[data-generate-source="linkedin"] .filter-google-note {
+#page-generate .filters-panel[data-generate-source="linkedin"] .google-only-generate {
   display: none !important;
 }
 
-#page-generate .filters-panel[data-generate-source="google"] .linkedin-only-generate,
-#page-generate .filters-panel[data-generate-source="google"] .filter-linkedin-note {
+#page-generate .filters-panel[data-generate-source="google"] .linkedin-only-generate {
   display: none !important;
 }
 

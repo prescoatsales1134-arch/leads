@@ -112,11 +112,9 @@
               <span id="lead-limit-display" class="lead-limit-display text-muted" aria-live="polite"></span>
             </div>
             <div class="generate-source-toggle" role="group" aria-label="Lead data source">
-              <button type="button" class="generate-source-btn is-active" data-generate-source="linkedin" aria-pressed="true">Apollo.io</button>
-              <button type="button" class="generate-source-btn" data-generate-source="google" aria-pressed="false">Google Maps</button>
+              <button type="button" class="generate-source-btn is-active" data-generate-source="linkedin" aria-pressed="true">LinkedIn Leads</button>
+              <button type="button" class="generate-source-btn" data-generate-source="google" aria-pressed="false">Google Leads</button>
             </div>
-            <p class="text-muted filter-linkedin-note" style="font-size: 0.85rem; margin: 0 0 0.75rem;">Apollo.io (Peakydev): industry, country, region, company size, and seniority must match the actor. Separate multiple values with commas (e.g. two industries or countries). Use <strong>Keywords</strong> for a city or metro (not sent in the Apify body—use region + country for location).</p>
-            <p class="text-muted filter-google-note" style="font-size: 0.85rem; margin: 0 0 0.75rem;">Google Maps: set <strong>Industry</strong> as search terms (comma-separated for multiple), <strong>Country</strong> and <strong>City</strong> for location (e.g. New York, USA). Max results maps to places per search.</p>
             <div class="form-grid">
               <label class="field">
                 <span>Industry</span>
@@ -153,19 +151,15 @@
                 </select>
               </label>
               <label class="field linkedin-only-generate">
-                <span>Seniority</span>
-                <div class="searchable-dropdown-wrap" id="seniority-dropdown-wrap">
-                  <input type="text" id="filter-seniority" placeholder="Optional — e.g. CEO, Director (comma-separated)" autocomplete="off" />
-                  <ul class="searchable-dropdown-list" id="seniority-dropdown-list" role="listbox" hidden></ul>
-                </div>
-              </label>
-              <label class="field linkedin-only-generate">
                 <span>Keywords</span>
                 <input type="text" id="filter-keywords" placeholder="City, metro, or extra terms (e.g. Los Angeles)" />
               </label>
               <label class="field linkedin-only-generate">
                 <span>Job title</span>
-                <input type="text" id="filter-jobTitle" placeholder="e.g. Owner, Marketing Manager" />
+                <div class="searchable-dropdown-wrap" id="job-title-dropdown-wrap">
+                  <input type="text" id="filter-jobTitle" placeholder="Search roles — e.g. CEO, Director (comma-separated)" autocomplete="off" title="Maps to Peakydev seniority in Apify" />
+                  <ul class="searchable-dropdown-list" id="job-title-dropdown-list" role="listbox" hidden></ul>
+                </div>
               </label>
               <label class="field field-check">
                 <input type="checkbox" id="filter-emailAvailable" />
@@ -189,7 +183,7 @@
               </div>
             </div>
             <div id="generate-success-banner" class="generate-success-banner" hidden aria-live="polite">
-              <span id="generate-success-banner-text">✅ <span id="generate-success-count">0</span> <span id="generate-success-suffix">Apollo.io Leads Generated Successfully</span></span>
+              <span id="generate-success-banner-text">✅ <span id="generate-success-count">0</span> <span id="generate-success-suffix">LinkedIn Leads Generated Successfully</span></span>
             </div>
             <div id="generate-next-step-card" class="next-step-card" hidden>
               <h3 class="next-step-title">🚀 What would you like to do next?</h3>

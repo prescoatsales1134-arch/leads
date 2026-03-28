@@ -13,7 +13,7 @@
   var selectedGenerateIds = {};
   var selectedLeadIds = {};
   var leadSourceTab = 'all';
-  /** Generate tab: Apollo.io (linkedin webhook) vs Google Maps. */
+  /** Generate tab: LinkedIn Leads (linkedin webhook) vs Google Leads. */
   var generateLeadSource = 'linkedin';
   var lastGenerateBannerSource = 'linkedin';
 
@@ -226,9 +226,9 @@
       };
     }
 
-    var seniorityEl = document.getElementById('filter-seniority');
+    var jobTitleEl = document.getElementById('filter-jobTitle');
     var regionEl = document.getElementById('filter-city');
-    var seniorityVal = (seniorityEl && seniorityEl.value) ? seniorityEl.value.trim() : '';
+    var seniorityVal = (jobTitleEl && jobTitleEl.value) ? jobTitleEl.value.trim() : '';
     if (seniorityVal === 'Any') seniorityVal = '';
     var regionVal = (regionEl && regionEl.value) ? regionEl.value.trim() : '';
     if (regionVal === 'Any') regionVal = '';
@@ -240,7 +240,6 @@
       maxResults: maxVal,
       companySize: (document.getElementById('filter-companySize') && document.getElementById('filter-companySize').value) || '',
       keywords: (document.getElementById('filter-keywords') && document.getElementById('filter-keywords').value) || '',
-      jobTitle: (document.getElementById('filter-jobTitle') && document.getElementById('filter-jobTitle').value) || '',
       seniority: seniorityVal,
       emailAvailable: emailAvailable,
       phoneAvailable: phoneAvailable
@@ -626,8 +625,8 @@
       var suffixEl = document.getElementById('generate-success-suffix');
       if (suffixEl) {
         suffixEl.textContent = lastGenerateBannerSource === 'google'
-          ? 'Google Maps Leads Generated Successfully'
-          : 'Apollo.io Leads Generated Successfully';
+          ? 'Google Leads Generated Successfully'
+          : 'LinkedIn Leads Generated Successfully';
       }
     }
     if (nextStepEl) {
@@ -982,10 +981,10 @@
       });
   }
 
-  function initSenioritySearchable() {
-    var input = document.getElementById('filter-seniority');
-    var listEl = document.getElementById('seniority-dropdown-list');
-    var wrap = document.getElementById('seniority-dropdown-wrap');
+  function initJobTitleSenioritySearchable() {
+    var input = document.getElementById('filter-jobTitle');
+    var listEl = document.getElementById('job-title-dropdown-list');
+    var wrap = document.getElementById('job-title-dropdown-wrap');
     if (!input || !listEl) return;
     function showList(filter) {
       var q = (filter || '').toLowerCase().trim();
@@ -1122,7 +1121,7 @@
     applyLinkedinFilterData(buildFallbackLinkedinPayload());
     loadLinkedinFilterOptions().then(function () {
       initIndustrySearchable();
-      initSenioritySearchable();
+      initJobTitleSenioritySearchable();
       initRegionByCountry();
     });
 
