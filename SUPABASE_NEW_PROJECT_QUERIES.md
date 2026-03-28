@@ -99,7 +99,6 @@ create table public.user_leads (
   company_domain text,
   country text,
   status text default 'New',
-  lead_source text not null default 'linkedin' check (lead_source in ('linkedin', 'google')),
   created_at timestamptz default now(),
   unique (user_id, lead_id)
 );
