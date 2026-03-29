@@ -189,6 +189,7 @@
   function syncGenerateSourceUI() {
     var panel = document.querySelector('#page-generate .filters-panel');
     var industryInput = document.getElementById('filter-industry');
+    var industryList = document.getElementById('industry-dropdown-list');
     var searchTermsLabel = document.getElementById('filter-search-terms-label');
     document.querySelectorAll('#page-generate .generate-source-btn').forEach(function (btn) {
       var on = btn.getAttribute('data-generate-source') === generateLeadSource;
@@ -201,6 +202,7 @@
         ? 'e.g. Real Estate (comma-separated)'
         : 'Search Peakydev industries…';
     }
+    if (industryList && generateLeadSource === 'google') industryList.hidden = true;
     if (searchTermsLabel) {
       searchTermsLabel.textContent = generateLeadSource === 'google' ? 'Search Terms' : 'Industry';
     }
@@ -1045,6 +1047,10 @@
     var wrap = document.getElementById('industry-dropdown-wrap');
     if (!input || !listEl) return;
     function showList(filter) {
+      if (generateLeadSource === 'google') {
+        listEl.hidden = true;
+        return;
+      }
       var q = (filter || '').toLowerCase().trim();
       var options = INDUSTRY_OPTIONS.filter(function (label) {
         return !q || label.toLowerCase().indexOf(q) !== -1;
