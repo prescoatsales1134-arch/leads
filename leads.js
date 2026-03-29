@@ -111,20 +111,6 @@
   ];
 
   var PEAKYDEV_SENIORITY_LIST = SENIORITY_OPTIONS.slice(1);
-  /**
-   * Clean country -> state/province map for dependent dropdowns.
-   * Keep this minimal and correct; expand via API/database later.
-   */
-  var COUNTRY_STATE_MAP = {
-    'United States': ['California', 'New York', 'Texas', 'Florida', 'Illinois', 'Pennsylvania', 'Ohio', 'Georgia', 'North Carolina', 'Michigan'],
-    'Canada': ['Ontario', 'Quebec', 'British Columbia', 'Alberta', 'Manitoba'],
-    'United Kingdom': ['England', 'Scotland', 'Wales', 'Northern Ireland'],
-    'Australia': ['New South Wales', 'Victoria', 'Queensland', 'Western Australia'],
-    'India': ['Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Gujarat'],
-    'Pakistan': ['Punjab', 'Sindh', 'Balochistan', 'Khyber Pakhtunkhwa', 'Islamabad Capital Territory']
-  };
-  var selectedCountry = '';
-  var selectedState = '';
 
   function cloneRegionsFallback() {
     var o = {};
@@ -1110,23 +1096,28 @@
     var regionSelect = document.getElementById('filter-city');
     if (!countrySelect || !regionSelect) return;
     function updateRegionOptions() {
-      selectedCountry = countrySelect.value || '';
-      var regions = COUNTRY_STATE_MAP[selectedCountry] || [];
-      selectedState = '';
+      var selectedCountry = countrySelect.value || '';
+      if (!selectedCountry) {
+        regionSelect.innerHTML = '<option value="">Any region</option>';
+        regionSelect.disabled = true;
+        return;
+      }
+
+      // Uses full country->regions map from API/data file (not a limited hardcoded subset).
+      var regions = REGIONS_BY_COUNTRY[selectedCountry] || [];
+      regions = regions.filter(function (r) { return r && r !== 'Any'; });
       if (!regions.length) {
         regionSelect.innerHTML = '<option value="">Any region</option>';
         regionSelect.disabled = true;
         return;
       }
+
       regionSelect.disabled = false;
       var opts = ['Any'].concat(regions);
       regionSelect.innerHTML = opts.map(function (c) {
         return '<option value="' + (c === 'Any' ? '' : escapeHtml(c)) + '">' + escapeHtml(c) + '</option>';
       }).join('');
     }
-    regionSelect.addEventListener('change', function () {
-      selectedState = regionSelect.value || '';
-    });
     countrySelect.addEventListener('change', updateRegionOptions);
     global._refreshLinkedinRegionOptions = updateRegionOptions;
     updateRegionOptions();
