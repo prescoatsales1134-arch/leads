@@ -599,6 +599,31 @@ function parseN8nWebhookUrl(raw) {
   return (raw.slice(start, start + 8) === 'https://' ? 'https://' : 'http://') + path;
 }
 
+var _n8nGenerateWebhookRewriteLogged = false;
+/**
+ * n8n "Test URL" paths use /webhook-test/... and only accept requests while the editor is listening.
+ * This app POSTs from the server, so those calls never hit a registered test listener — use /webhook/... instead
+ * (workflow must be Active). Set N8N_USE_WEBHOOK_TEST_URL=1 to send the URL unchanged.
+ */
+function n8nWebhookUrlForServerExecution(url) {
+  if (!url || typeof url !== 'string') return url;
+  var allowTest = process.env.N8N_USE_WEBHOOK_TEST_URL === '1' || String(process.env.N8N_USE_WEBHOOK_TEST_URL || '').toLowerCase() === 'true';
+  if (allowTest) return url;
+  if (url.indexOf('/webhook-test/') !== -1) {
+    if (!_n8nGenerateWebhookRewriteLogged) {
+      _n8nGenerateWebhookRewriteLogged = true;
+      console.warn(
+        '[n8n] Rewriting /webhook-test/ → /webhook/ for generate-leads (test URLs do not run workflows for server POSTs). Activate the workflow and use the production URL in .env, or set N8N_USE_WEBHOOK_TEST_URL=1 to disable.'
+      );
+    }
+    return url.replace(/\/webhook-test\//g, '/webhook/');
+  }
+  return url;
+}
+
+console.log('[env] N8N_GENERATE_LEADS_WEBHOOK:', parseN8nWebhookUrl(process.env.N8N_GENERATE_LEADS_WEBHOOK || '') ? 'configured' : 'not set');
+console.log('[env] N8N_GENERATE_GOOGLE_LEADS_WEBHOOK:', parseN8nWebhookUrl(process.env.N8N_GENERATE_GOOGLE_LEADS_WEBHOOK || '') ? 'configured' : 'not set');
+
 function normalizeLeadSource(v) {
   if (v === 'google' || (v && String(v).toLowerCase() === 'google')) return 'google';
   return 'linkedin';
@@ -756,7 +781,7 @@ app.post('/api/generate-leads', function (req, res) {
     var body = req.body && typeof req.body === 'object' ? req.body : {};
     var source = (body.source && String(body.source).toLowerCase() === 'google') ? 'google' : 'linkedin';
     var envName = source === 'google' ? 'N8N_GENERATE_GOOGLE_LEADS_WEBHOOK' : 'N8N_GENERATE_LEADS_WEBHOOK';
-    var webhookUrl = parseN8nWebhookUrl(process.env[envName] || '');
+    var webhookUrl = n8nWebhookUrlForServerExecution(parseN8nWebhookUrl(process.env[envName] || ''));
     if (!webhookUrl || !webhookUrl.startsWith('http')) {
       var err503 = source === 'google'
         ? 'Google generate webhook not configured. Add N8N_GENERATE_GOOGLE_LEADS_WEBHOOK to .env.'
@@ -791,14 +816,20 @@ app.post('/api/generate-leads', function (req, res) {
           return wh.text().then(function (txt) {
             var data;
             try { data = txt && txt.trim() ? JSON.parse(txt) : null; } catch (e) { data = null; }
-            return { ok: wh.ok, data: data, raw: txt || '' };
+            return { ok: wh.ok, status: wh.status, data: data, raw: txt || '' };
           });
         })
         .then(function (_ref) {
           var ok = _ref.ok;
+          var status = _ref.status;
           var data = _ref.data;
           var raw = _ref.raw;
-          if (!ok) return res.status(502).json({ error: (data && (data.error || data.message)) || 'Generate leads failed' });
+          if (!ok) {
+            var detail = (data && (data.error || data.message)) || '';
+            if (!detail && raw && raw.length < 500) detail = String(raw).trim();
+            var errMsg = detail || ('n8n webhook returned HTTP ' + (status != null ? status : '?'));
+            return res.status(502).json({ error: errMsg });
+          }
           res.setHeader('Content-Type', 'application/json');
           res.send(raw || '[]');
         })
