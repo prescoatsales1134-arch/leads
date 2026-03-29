@@ -117,13 +117,13 @@
             </div>
             <div class="form-grid">
               <label class="field">
-                <span>Industry</span>
+                <span id="filter-search-terms-label">Industry</span>
                 <div class="searchable-dropdown-wrap" id="industry-dropdown-wrap">
                   <input type="text" id="filter-industry" placeholder="Search Peakydev industries…" autocomplete="off" />
                   <ul class="searchable-dropdown-list" id="industry-dropdown-list" role="listbox" hidden></ul>
                 </div>
               </label>
-              <label class="field">
+              <label class="field linkedin-only-generate">
                 <span>Country</span>
                 <select id="filter-country">
                   <option value="">Any country</option>
@@ -136,8 +136,8 @@
                 </select>
               </label>
               <label class="field google-only-generate">
-                <span>City</span>
-                <input type="text" id="filter-google-city" placeholder="e.g. New York" autocomplete="off" title="Combined with country for locationQuery" />
+                <span>Location</span>
+                <input type="text" id="filter-google-location" placeholder="Example (New York, USA)" autocomplete="off" title="One location per run (required for Google Leads)" />
               </label>
               <label class="field">
                 <span>Max results</span>
@@ -161,13 +161,17 @@
                   <ul class="searchable-dropdown-list" id="job-title-dropdown-list" role="listbox" hidden></ul>
                 </div>
               </label>
-              <label class="field field-check">
+              <label class="field field-check linkedin-only-generate">
                 <input type="checkbox" id="filter-emailAvailable" />
                 <span>Email Available</span>
               </label>
-              <label class="field field-check">
+              <label class="field field-check linkedin-only-generate">
                 <input type="checkbox" id="filter-phoneAvailable" />
                 <span>Phone Available</span>
+              </label>
+              <label class="field field-check google-only-generate">
+                <input type="checkbox" id="filter-includeClosedPlaces" />
+                <span>Include Closed Places</span>
               </label>
             </div>
             <p class="lead-limit-cta text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">Need more leads? Go to the <a href="#pricing">Pricing</a> tab for plans and limits.</p>

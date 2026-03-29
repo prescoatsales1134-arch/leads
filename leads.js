@@ -111,6 +111,20 @@
   ];
 
   var PEAKYDEV_SENIORITY_LIST = SENIORITY_OPTIONS.slice(1);
+  /**
+   * Clean country -> state/province map for dependent dropdowns.
+   * Keep this minimal and correct; expand via API/database later.
+   */
+  var COUNTRY_STATE_MAP = {
+    'United States': ['California', 'New York', 'Texas', 'Florida', 'Illinois', 'Pennsylvania', 'Ohio', 'Georgia', 'North Carolina', 'Michigan'],
+    'Canada': ['Ontario', 'Quebec', 'British Columbia', 'Alberta', 'Manitoba'],
+    'United Kingdom': ['England', 'Scotland', 'Wales', 'Northern Ireland'],
+    'Australia': ['New South Wales', 'Victoria', 'Queensland', 'Western Australia'],
+    'India': ['Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Gujarat'],
+    'Pakistan': ['Punjab', 'Sindh', 'Balochistan', 'Khyber Pakhtunkhwa', 'Islamabad Capital Territory']
+  };
+  var selectedCountry = '';
+  var selectedState = '';
 
   function cloneRegionsFallback() {
     var o = {};
@@ -189,6 +203,7 @@
   function syncGenerateSourceUI() {
     var panel = document.querySelector('#page-generate .filters-panel');
     var industryInput = document.getElementById('filter-industry');
+    var searchTermsLabel = document.getElementById('filter-search-terms-label');
     document.querySelectorAll('#page-generate .generate-source-btn').forEach(function (btn) {
       var on = btn.getAttribute('data-generate-source') === generateLeadSource;
       btn.classList.toggle('is-active', on);
@@ -197,8 +212,11 @@
     if (panel) panel.setAttribute('data-generate-source', generateLeadSource);
     if (industryInput) {
       industryInput.placeholder = generateLeadSource === 'google'
-        ? 'e.g. Real Estate (comma-separated for multiple)'
+        ? 'e.g. Real Estate (comma-separated)'
         : 'Search Peakydev industries…';
+    }
+    if (searchTermsLabel) {
+      searchTermsLabel.textContent = generateLeadSource === 'google' ? 'Search Terms' : 'Industry';
     }
   }
 
@@ -214,15 +232,13 @@
     var phoneAvailable = !!(document.getElementById('filter-phoneAvailable') && document.getElementById('filter-phoneAvailable').checked);
 
     if (generateLeadSource === 'google') {
-      var googleCityEl = document.getElementById('filter-google-city');
-      var cityFree = (googleCityEl && googleCityEl.value) ? googleCityEl.value.trim() : '';
+      var googleLocationEl = document.getElementById('filter-google-location');
+      var location = (googleLocationEl && googleLocationEl.value) ? googleLocationEl.value.trim() : '';
       return {
-        industry: industryVal,
-        country: countryVal,
-        city: cityFree,
+        searchTerms: industryVal,
+        location: location,
         maxResults: maxVal,
-        emailAvailable: emailAvailable,
-        phoneAvailable: phoneAvailable
+        includeClosedPlaces: !!(document.getElementById('filter-includeClosedPlaces') && document.getElementById('filter-includeClosedPlaces').checked)
       };
     }
 
@@ -851,6 +867,13 @@
 
     function doGenerate() {
       var source = generateLeadSource === 'google' ? 'google' : 'linkedin';
+      if (source === 'google' && (!payload.location || !String(payload.location).trim())) {
+        if (global.utils && global.utils.toast) global.utils.toast('Location is required for Google Leads (example: New York, USA).', 'error');
+        var loadingEarly = document.getElementById('generate-loading');
+        if (loadingEarly) loadingEarly.hidden = true;
+        if (btn) btn.disabled = false;
+        return;
+      }
       var body = Object.assign({}, payload, { source: source });
       fetch('/api/generate-leads', {
       method: 'POST',
@@ -1087,17 +1110,23 @@
     var regionSelect = document.getElementById('filter-city');
     if (!countrySelect || !regionSelect) return;
     function updateRegionOptions() {
-      var country = countrySelect.value || '';
-      var regions = REGIONS_BY_COUNTRY[country];
-      if (!regions || !regions.length) {
+      selectedCountry = countrySelect.value || '';
+      var regions = COUNTRY_STATE_MAP[selectedCountry] || [];
+      selectedState = '';
+      if (!regions.length) {
         regionSelect.innerHTML = '<option value="">Any region</option>';
+        regionSelect.disabled = true;
         return;
       }
+      regionSelect.disabled = false;
       var opts = ['Any'].concat(regions);
       regionSelect.innerHTML = opts.map(function (c) {
         return '<option value="' + (c === 'Any' ? '' : escapeHtml(c)) + '">' + escapeHtml(c) + '</option>';
       }).join('');
     }
+    regionSelect.addEventListener('change', function () {
+      selectedState = regionSelect.value || '';
+    });
     countrySelect.addEventListener('change', updateRegionOptions);
     global._refreshLinkedinRegionOptions = updateRegionOptions;
     updateRegionOptions();

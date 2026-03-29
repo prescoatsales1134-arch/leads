@@ -2,7 +2,7 @@
  * n8n Code node: dashboard body (Google Leads mode) → Google Maps / Places Apify actor input.
  * Place AFTER Webhook, BEFORE HTTP Request.
  *
- * Dashboard sends: industry, country, city (free text), maxResults, emailAvailable, phoneAvailable.
+ * Dashboard sends: searchTerms, location, maxResults, includeClosedPlaces.
  *
  * Maps to the fixed actor shape:
  * includeWebResults, language, locationQuery, maxCrawledPlacesPerSearch, maximumLeadsEnrichmentRecords,
@@ -23,26 +23,20 @@ function splitAndTrim(str) {
 var raw = $input.first().json;
 var body = raw.body || raw;
 
-var industry = body.industry != null ? String(body.industry).trim() : '';
-var country = body.country != null ? String(body.country).trim() : '';
-var city = body.city != null ? String(body.city).trim() : '';
+var searchTerms = body.searchTerms != null ? String(body.searchTerms).trim() : '';
+if (!searchTerms && body.industry != null) searchTerms = String(body.industry).trim(); // legacy compatibility
+var locationQuery = body.location != null ? String(body.location).trim() : '';
 
 var maxRaw = body.maxResults != null ? parseInt(body.maxResults, 10) : 50;
 if (isNaN(maxRaw) || maxRaw < 1) maxRaw = 50;
 var maxCrawledPlacesPerSearch = Math.min(500, maxRaw);
 
-var searchStringsArray = industry ? splitAndTrim(industry) : [];
+var searchStringsArray = searchTerms ? splitAndTrim(searchTerms) : [];
 if (searchStringsArray.length === 0) {
   searchStringsArray = ['local business'];
 }
 
-var locParts = [];
-if (city) locParts.push(city);
-if (country) locParts.push(country);
-var locationQuery = locParts.filter(Boolean).join(', ');
-if (!locationQuery) {
-  locationQuery = country || 'United States';
-}
+if (!locationQuery) locationQuery = 'United States';
 
 var ACTOR_INPUT = {
   includeWebResults: false,
@@ -50,7 +44,7 @@ var ACTOR_INPUT = {
   locationQuery: locationQuery,
   maxCrawledPlacesPerSearch: maxCrawledPlacesPerSearch,
   maximumLeadsEnrichmentRecords: 0,
-  scrapeContacts: !!body.emailAvailable,
+  scrapeContacts: true,
   scrapeDirectories: false,
   scrapePlaceDetailPage: false,
   scrapeSocialMediaProfiles: {
@@ -62,7 +56,7 @@ var ACTOR_INPUT = {
   },
   scrapeTableReservationProvider: false,
   searchStringsArray: searchStringsArray,
-  skipClosedPlaces: false
+  skipClosedPlaces: !body.includeClosedPlaces
 };
 
 return [{ json: { body: ACTOR_INPUT } }];
