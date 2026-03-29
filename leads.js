@@ -191,6 +191,7 @@
     var industryInput = document.getElementById('filter-industry');
     var industryList = document.getElementById('industry-dropdown-list');
     var searchTermsLabel = document.getElementById('filter-search-terms-label');
+    var maxEl = document.getElementById('filter-maxResults');
     document.querySelectorAll('#page-generate .generate-source-btn').forEach(function (btn) {
       var on = btn.getAttribute('data-generate-source') === generateLeadSource;
       btn.classList.toggle('is-active', on);
@@ -205,6 +206,20 @@
     if (industryList && generateLeadSource === 'google') industryList.hidden = true;
     if (searchTermsLabel) {
       searchTermsLabel.textContent = generateLeadSource === 'google' ? 'Search Terms' : 'Industry';
+    }
+    if (maxEl) {
+      if (generateLeadSource === 'linkedin') {
+        maxEl.min = '100';
+        var current = maxEl.value ? parseInt(maxEl.value, 10) : NaN;
+        if (!maxEl.value || isNaN(current) || current < 100) {
+          maxEl.value = '100';
+          if (global.utils && global.utils.toast) {
+            global.utils.toast('LinkedIn Leads minimum is 100 results. Updated Max results to 100.', 'info');
+          }
+        }
+      } else {
+        maxEl.min = '1';
+      }
     }
   }
 
@@ -855,6 +870,15 @@
 
     function doGenerate() {
       var source = generateLeadSource === 'google' ? 'google' : 'linkedin';
+      if (source === 'linkedin' && maxResults < 100) {
+        if (global.utils && global.utils.toast) {
+          global.utils.toast('For LinkedIn Leads, Max results must be greater than or equal to 100.', 'error');
+        }
+        var loadingMin = document.getElementById('generate-loading');
+        if (loadingMin) loadingMin.hidden = true;
+        if (btn) btn.disabled = false;
+        return;
+      }
       if (source === 'google' && (!payload.location || !String(payload.location).trim())) {
         if (global.utils && global.utils.toast) global.utils.toast('Location is required for Google Leads (example: New York, USA).', 'error');
         var loadingEarly = document.getElementById('generate-loading');
