@@ -16,6 +16,7 @@
   /** Generate tab: LinkedIn Leads (linkedin webhook) vs Google Leads. */
   var generateLeadSource = 'linkedin';
   var lastGenerateBannerSource = 'linkedin';
+  var lastGenerateNoResultsMessage = '';
 
   /** Peakydev LinkedIn scraper — loaded from GET /api/linkedin-filter-options (fallback if API fails). */
   var INDUSTRY_OPTIONS = ['Any'];
@@ -201,7 +202,7 @@
     if (industryInput) {
       industryInput.placeholder = generateLeadSource === 'google'
         ? 'e.g. Real Estate (comma-separated)'
-        : 'Search Peakydev industries…';
+        : 'Search Industries...';
     }
     if (industryList && generateLeadSource === 'google') industryList.hidden = true;
     if (searchTermsLabel) {
@@ -616,15 +617,23 @@
     var prevBtn = document.getElementById('generate-prev');
     var nextBtn = document.getElementById('generate-next');
     if (!wrap) return;
-    if (leads && leads.length) {
+    if (Array.isArray(leads)) {
       lastGeneratedLeads = leads.slice();
       generateCurrentPage = 1;
     }
     var total = lastGeneratedLeads.length;
     if (total === 0) {
-      wrap.hidden = true;
+      if (lastGenerateNoResultsMessage) {
+        wrap.hidden = false;
+        wrap.innerHTML = '<div class="empty-state" style="margin:0; padding:1.25rem 1rem; border:1px solid var(--border); border-radius:12px; background:var(--surface-2); text-align:center;">' +
+          '<p style="margin:0 0 0.35rem 0; font-weight:600;">No Leads Generated</p>' +
+          '<p style="margin:0; color:var(--muted);">' + escapeHtml(lastGenerateNoResultsMessage) + '</p>' +
+          '</div>';
+      } else {
+        wrap.hidden = true;
+      }
       if (pagination) pagination.hidden = true;
-      if (empty) empty.hidden = false;
+      if (empty) empty.hidden = !!lastGenerateNoResultsMessage;
       var banner = document.getElementById('generate-success-banner');
       var nextStep = document.getElementById('generate-next-step-card');
       var aiCard = document.getElementById('ai-assistant-card');
@@ -897,13 +906,22 @@
         return res.json().catch(function () { return {}; }).then(function (data) {
           if (res.status === 403 && data && data.error) {
             if (global.utils && global.utils.toast) global.utils.toast(data.error, 'error');
+            lastGenerateNoResultsMessage = '';
             addLeads([]);
             return;
           }
           if (!res.ok) {
             if (global.utils && global.utils.toast) global.utils.toast((data && data.error) || 'Failed to generate leads', 'error');
+            lastGenerateNoResultsMessage = '';
             addLeads([]);
             return;
+          }
+          var isNoResults = source === 'linkedin' && !!(data && typeof data === 'object' && !Array.isArray(data) && String(data.status || '').toLowerCase() === 'no_results');
+          if (isNoResults) {
+            lastGenerateNoResultsMessage = (data && data.message) ? String(data.message) : 'No leads found for the selected filters. Try widening your search.';
+            if (global.utils && global.utils.toast) global.utils.toast(lastGenerateNoResultsMessage, 'info');
+          } else {
+            lastGenerateNoResultsMessage = '';
           }
           lastGenerateBannerSource = source;
           addLeads(data, function (normalized, newCount, duplicateCount) {
@@ -918,7 +936,7 @@
               }
             }
             updateLeadLimitDisplay();
-            if (normalized.length > 0 && getSyncWebhook()) syncBatch(normalized, true);
+            if (source === 'linkedin' && normalized.length > 0 && getSyncWebhook()) syncBatch(normalized, true);
           }, source);
         });
       })
