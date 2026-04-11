@@ -71,6 +71,46 @@ function getSiteUrl(req) {
   return proto + '://' + host;
 }
 
+/** Peakydev LinkedIn actor: each seniority must match exactly (Apify rejects other strings). */
+const PEAKYDEV_SENIORITY_ENUM = [
+  'Founder',
+  'Chairman',
+  'President',
+  'CEO',
+  'CXO',
+  'Vice President',
+  'Director',
+  'Head',
+  'Manager',
+  'Senior',
+  'Junior',
+  'Entry Level',
+  'Executive'
+];
+
+/** Keep only allowed Peakydev seniority tokens; comma-separated string or array in → comma-separated string out. */
+function normalizePeakydevSeniorityInput(val) {
+  if (val == null) return '';
+  var tokens = Array.isArray(val) ? val.map(String) : String(val).split(',');
+  var canonByLower = {};
+  for (var i = 0; i < PEAKYDEV_SENIORITY_ENUM.length; i++) {
+    var s = PEAKYDEV_SENIORITY_ENUM[i];
+    canonByLower[s.toLowerCase()] = s;
+  }
+  var out = [];
+  var seen = {};
+  for (var j = 0; j < tokens.length; j++) {
+    var t = String(tokens[j]).trim();
+    if (!t) continue;
+    var c = canonByLower[t.toLowerCase()];
+    if (c && !seen[c]) {
+      seen[c] = true;
+      out.push(c);
+    }
+  }
+  return out.join(', ');
+}
+
 function getAccessToken(req) {
   return req.cookies && req.cookies[COOKIE_NAME];
 }
@@ -517,7 +557,7 @@ app.get('/api/linkedin-filter-options', function (req, res) {
       var industries = fs.readFileSync(indPath, 'utf8').trim().split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
       var countries = fs.readFileSync(countriesPath, 'utf8').trim().split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
       var regionsByCountry = JSON.parse(fs.readFileSync(regionsPath, 'utf8'));
-      var seniority = ['Founder', 'Chairman', 'President', 'CEO', 'CXO', 'Vice President', 'Director', 'Head', 'Manager', 'Senior', 'Junior', 'Entry Level', 'Executive'];
+      var seniority = PEAKYDEV_SENIORITY_ENUM.slice();
       var companySizes = [
         { value: '0 - 1', label: '0 – 1 employees' },
         { value: '2 - 10', label: '2 – 10' },
@@ -806,6 +846,9 @@ app.post('/api/generate-leads', function (req, res) {
       var payload = {};
       for (var k in body) {
         if (Object.prototype.hasOwnProperty.call(body, k) && k !== 'source') payload[k] = body[k];
+      }
+      if (source === 'linkedin' && Object.prototype.hasOwnProperty.call(payload, 'seniority')) {
+        payload.seniority = normalizePeakydevSeniorityInput(payload.seniority);
       }
       fetch(webhookUrl, {
         method: 'POST',

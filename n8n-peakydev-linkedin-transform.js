@@ -24,6 +24,42 @@ function splitAndTrim(str) {
     .filter(Boolean);
 }
 
+var PEAKYDEV_SENIORITY_ENUM = [
+  'Founder',
+  'Chairman',
+  'President',
+  'CEO',
+  'CXO',
+  'Vice President',
+  'Director',
+  'Head',
+  'Manager',
+  'Senior',
+  'Junior',
+  'Entry Level',
+  'Executive'
+];
+
+function filterToPeakydevSeniority(tokens) {
+  var canonByLower = {};
+  for (var i = 0; i < PEAKYDEV_SENIORITY_ENUM.length; i++) {
+    var s = PEAKYDEV_SENIORITY_ENUM[i];
+    canonByLower[s.toLowerCase()] = s;
+  }
+  var out = [];
+  var seen = {};
+  for (var j = 0; j < tokens.length; j++) {
+    var t = String(tokens[j]).trim();
+    if (!t) continue;
+    var c = canonByLower[t.toLowerCase()];
+    if (c && !seen[c]) {
+      seen[c] = true;
+      out.push(c);
+    }
+  }
+  return out;
+}
+
 var raw = $input.first().json;
 var body = raw.body || raw;
 
@@ -43,7 +79,8 @@ var personCountry = country ? splitAndTrim(country) : [];
 
 var seniority = [];
 if (body.seniority != null && String(body.seniority).trim() !== '') {
-  seniority = Array.isArray(body.seniority) ? body.seniority.map(String) : splitAndTrim(String(body.seniority));
+  var rawSeniority = Array.isArray(body.seniority) ? body.seniority.map(String) : splitAndTrim(String(body.seniority));
+  seniority = filterToPeakydevSeniority(rawSeniority);
 }
 
 var apiBody = {

@@ -20,8 +20,8 @@
 
   /** Peakydev LinkedIn scraper — loaded from GET /api/linkedin-filter-options (fallback if API fails). */
   var INDUSTRY_OPTIONS = ['Any'];
-  var SENIORITY_OPTIONS = [
-    'Any',
+  /** Peakydev / Apify: only these strings are valid for LinkedIn seniority (UI “Job title”). */
+  var PEAKYDEV_SENIORITY_ENUM = [
     'Founder',
     'Chairman',
     'President',
@@ -36,6 +36,7 @@
     'Entry Level',
     'Executive'
   ];
+  var SENIORITY_OPTIONS = ['Any'].concat(PEAKYDEV_SENIORITY_ENUM);
   var REGIONS_BY_COUNTRY = {};
 
   var FALLBACK_INDUSTRY_LIST = [
@@ -111,7 +112,42 @@
     { value: '10000+', label: '10,000+' }
   ];
 
-  var PEAKYDEV_SENIORITY_LIST = SENIORITY_OPTIONS.slice(1);
+  var PEAKYDEV_SENIORITY_LIST = PEAKYDEV_SENIORITY_ENUM.slice();
+
+  function normalizeLinkedinSeniorityInput(val) {
+    if (val == null || val === '') return '';
+    var tokens = Array.isArray(val) ? val.map(String) : String(val).split(',');
+    var canonByLower = {};
+    for (var i = 0; i < PEAKYDEV_SENIORITY_ENUM.length; i++) {
+      var s = PEAKYDEV_SENIORITY_ENUM[i];
+      canonByLower[s.toLowerCase()] = s;
+    }
+    var out = [];
+    var seen = {};
+    for (var j = 0; j < tokens.length; j++) {
+      var t = String(tokens[j]).trim();
+      if (!t) continue;
+      var c = canonByLower[t.toLowerCase()];
+      if (c && !seen[c]) {
+        seen[c] = true;
+        out.push(c);
+      }
+    }
+    return out.join(', ');
+  }
+
+  function linkedinSeniorityHasInvalidToken(val) {
+    if (val == null || String(val).trim() === '') return false;
+    var parts = String(val).split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    var canonByLower = {};
+    for (var i = 0; i < PEAKYDEV_SENIORITY_ENUM.length; i++) {
+      canonByLower[PEAKYDEV_SENIORITY_ENUM[i].toLowerCase()] = true;
+    }
+    for (var j = 0; j < parts.length; j++) {
+      if (!canonByLower[parts[j].toLowerCase()]) return true;
+    }
+    return false;
+  }
 
   function cloneRegionsFallback() {
     var o = {};
@@ -136,7 +172,8 @@
   function applyLinkedinFilterData(data) {
     if (!data) return;
     INDUSTRY_OPTIONS = ['Any'].concat(data.industries || FALLBACK_INDUSTRY_LIST);
-    SENIORITY_OPTIONS = ['Any'].concat(data.seniority || PEAKYDEV_SENIORITY_LIST);
+    // Job title maps to Peakydev seniority enums only — do not use extra strings from the API.
+    SENIORITY_OPTIONS = ['Any'].concat(PEAKYDEV_SENIORITY_ENUM);
     REGIONS_BY_COUNTRY = data.regionsByCountry && typeof data.regionsByCountry === 'object'
       ? data.regionsByCountry
       : cloneRegionsFallback();
@@ -250,6 +287,7 @@
     var regionEl = document.getElementById('filter-city');
     var seniorityVal = (jobTitleEl && jobTitleEl.value) ? jobTitleEl.value.trim() : '';
     if (seniorityVal === 'Any') seniorityVal = '';
+    seniorityVal = normalizeLinkedinSeniorityInput(seniorityVal);
     var regionVal = (regionEl && regionEl.value) ? regionEl.value.trim() : '';
     if (regionVal === 'Any') regionVal = '';
     return {
@@ -1054,6 +1092,15 @@
       listEl.hidden = true;
       input.focus();
     }
+    function normalizeJobTitleField() {
+      if (!input) return;
+      var raw = input.value.trim();
+      if (linkedinSeniorityHasInvalidToken(raw) && global.utils && global.utils.toast) {
+        global.utils.toast('Job title only accepts Peakydev seniority levels (e.g. CEO, Vice President). Other words were removed.', 'info');
+      }
+      input.value = normalizeLinkedinSeniorityInput(raw);
+    }
+    input.addEventListener('blur', normalizeJobTitleField);
     input.addEventListener('focus', function () { showList(input.value); });
     input.addEventListener('input', function () { showList(input.value); });
     input.addEventListener('keydown', function (e) {
