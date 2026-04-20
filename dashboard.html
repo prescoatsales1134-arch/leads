@@ -125,15 +125,17 @@
               </label>
               <label class="field linkedin-only-generate">
                 <span>Country</span>
-                <select id="filter-country">
-                  <option value="">Any country</option>
-                </select>
+                <div class="searchable-dropdown-wrap" id="country-dropdown-wrap">
+                  <input type="text" id="filter-country" placeholder="Search countries..." autocomplete="off" />
+                  <ul class="searchable-dropdown-list" id="country-dropdown-list" role="listbox" hidden></ul>
+                </div>
               </label>
               <label class="field linkedin-only-generate">
                 <span>State / province / region</span>
-                <select id="filter-city" title="Peakydev personState — pick a country first">
-                  <option value="">Any region</option>
-                </select>
+                <div class="searchable-dropdown-wrap" id="region-dropdown-wrap">
+                  <input type="text" id="filter-city" placeholder="Pick a country first..." autocomplete="off" title="Peakydev personState — pick a country first" />
+                  <ul class="searchable-dropdown-list" id="region-dropdown-list" role="listbox" hidden></ul>
+                </div>
               </label>
               <label class="field google-only-generate">
                 <span>Location</span>

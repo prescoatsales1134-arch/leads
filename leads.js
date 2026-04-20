@@ -38,6 +38,7 @@
   ];
   var SENIORITY_OPTIONS = ['Any'].concat(PEAKYDEV_SENIORITY_ENUM);
   var REGIONS_BY_COUNTRY = {};
+  var LINKEDIN_COUNTRY_OPTIONS = [];
 
   var FALLBACK_INDUSTRY_LIST = [
     'Accounting',
@@ -177,14 +178,7 @@
     REGIONS_BY_COUNTRY = data.regionsByCountry && typeof data.regionsByCountry === 'object'
       ? data.regionsByCountry
       : cloneRegionsFallback();
-
-    var countrySel = document.getElementById('filter-country');
-    if (countrySel) {
-      var countries = data.countries && data.countries.length ? data.countries : FALLBACK_COUNTRIES_LIST;
-      countrySel.innerHTML = '<option value="">Any country</option>' + countries.map(function (c) {
-        return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
-      }).join('');
-    }
+    LINKEDIN_COUNTRY_OPTIONS = data.countries && data.countries.length ? data.countries.slice() : FALLBACK_COUNTRIES_LIST.slice();
 
     var sizeSel = document.getElementById('filter-companySize');
     if (sizeSel && data.companySizes && data.companySizes.length) {
@@ -1186,36 +1180,156 @@
     });
   }
 
-  function initRegionByCountry() {
-    var countrySelect = document.getElementById('filter-country');
-    var regionSelect = document.getElementById('filter-city');
-    if (!countrySelect || !regionSelect) return;
-    function updateRegionOptions() {
-      var selectedCountry = countrySelect.value || '';
-      if (!selectedCountry) {
-        regionSelect.innerHTML = '<option value="">Any region</option>';
-        regionSelect.disabled = true;
-        return;
-      }
+  function initLinkedinGeoSearchables() {
+    var countryInput = document.getElementById('filter-country');
+    var countryListEl = document.getElementById('country-dropdown-list');
+    var countryWrap = document.getElementById('country-dropdown-wrap');
+    var regionInput = document.getElementById('filter-city');
+    var regionListEl = document.getElementById('region-dropdown-list');
+    var regionWrap = document.getElementById('region-dropdown-wrap');
+    if (!countryInput || !countryListEl || !regionInput || !regionListEl) return;
 
-      // Uses full country->regions map from API/data file (not a limited hardcoded subset).
-      var regions = REGIONS_BY_COUNTRY[selectedCountry] || [];
-      regions = regions.filter(function (r) { return r && r !== 'Any'; });
-      if (!regions.length) {
-        regionSelect.innerHTML = '<option value="">Any region</option>';
-        regionSelect.disabled = true;
-        return;
-      }
-
-      regionSelect.disabled = false;
-      var opts = ['Any'].concat(regions);
-      regionSelect.innerHTML = opts.map(function (c) {
-        return '<option value="' + (c === 'Any' ? '' : escapeHtml(c)) + '">' + escapeHtml(c) + '</option>';
-      }).join('');
+    function uniqList(items) {
+      var out = [];
+      var seen = {};
+      (items || []).forEach(function (it) {
+        if (!it) return;
+        var s = String(it).trim();
+        if (!s) return;
+        var k = s.toLowerCase();
+        if (seen[k]) return;
+        seen[k] = true;
+        out.push(s);
+      });
+      return out;
     }
-    countrySelect.addEventListener('change', updateRegionOptions);
-    global._refreshLinkedinRegionOptions = updateRegionOptions;
-    updateRegionOptions();
+
+    function canonicalCountry(value) {
+      var v = String(value || '').trim();
+      if (!v) return '';
+      var low = v.toLowerCase();
+      for (var i = 0; i < LINKEDIN_COUNTRY_OPTIONS.length; i++) {
+        var c = String(LINKEDIN_COUNTRY_OPTIONS[i] || '').trim();
+        if (c && c.toLowerCase() === low) return c;
+      }
+      return v;
+    }
+
+    function getRegionsForCountry(rawCountry) {
+      var country = canonicalCountry(rawCountry);
+      var regions = REGIONS_BY_COUNTRY[country] || [];
+      return uniqList(regions.filter(function (r) { return r && r !== 'Any'; }));
+    }
+
+    function setRegionAvailability() {
+      var regions = getRegionsForCountry(countryInput.value);
+      var disabled = regions.length === 0;
+      regionInput.disabled = disabled;
+      regionInput.placeholder = disabled ? 'Pick a country first...' : 'Search state / province / region...';
+      if (disabled) regionInput.value = '';
+      if (regionInput.value) {
+        var regionValue = String(regionInput.value).trim().toLowerCase();
+        var exists = regions.some(function (r) { return r.toLowerCase() === regionValue; });
+        if (!exists) regionInput.value = '';
+      }
+      regionListEl.hidden = true;
+    }
+
+    function showCountryList(filter) {
+      var q = String(filter || '').toLowerCase().trim();
+      var options = uniqList(LINKEDIN_COUNTRY_OPTIONS).filter(function (label) {
+        return !q || label.toLowerCase().indexOf(q) !== -1;
+      });
+      countryListEl.innerHTML = options.slice(0, 250).map(function (label, i) {
+        return '<li role="option" tabindex="-1" data-value="' + escapeHtml(label) + '"' + (i === 0 ? ' aria-selected="true"' : '') + '>' + escapeHtml(label) + '</li>';
+      }).join('');
+      countryListEl.hidden = options.length === 0;
+    }
+
+    function showRegionList(filter) {
+      var regions = getRegionsForCountry(countryInput.value);
+      if (!regions.length) {
+        regionListEl.hidden = true;
+        return;
+      }
+      var q = String(filter || '').toLowerCase().trim();
+      var options = regions.filter(function (label) {
+        return !q || label.toLowerCase().indexOf(q) !== -1;
+      });
+      regionListEl.innerHTML = options.slice(0, 250).map(function (label, i) {
+        return '<li role="option" tabindex="-1" data-value="' + escapeHtml(label) + '"' + (i === 0 ? ' aria-selected="true"' : '') + '>' + escapeHtml(label) + '</li>';
+      }).join('');
+      regionListEl.hidden = options.length === 0;
+    }
+
+    function selectCountry(val) {
+      countryInput.value = val || '';
+      setRegionAvailability();
+      countryListEl.hidden = true;
+      countryInput.focus();
+    }
+
+    function selectRegion(val) {
+      regionInput.value = val || '';
+      regionListEl.hidden = true;
+      regionInput.focus();
+    }
+
+    function bindSearchableInput(input, listEl, showList, selectValue) {
+      input.addEventListener('focus', function () { showList(input.value); });
+      input.addEventListener('input', function () { showList(input.value); });
+      input.addEventListener('keydown', function (e) {
+        var opts = listEl.querySelectorAll('li');
+        var cur = listEl.querySelector('[aria-selected="true"]');
+        if (e.key === 'Escape') { listEl.hidden = true; return; }
+        if (e.key === 'Enter' && cur) { e.preventDefault(); selectValue(cur.getAttribute('data-value')); return; }
+        if (e.key === 'ArrowDown' && opts.length) {
+          e.preventDefault();
+          var next = cur ? cur.nextElementSibling : opts[0];
+          if (next) { if (cur) cur.removeAttribute('aria-selected'); next.setAttribute('aria-selected', 'true'); next.scrollIntoView({ block: 'nearest' }); }
+          return;
+        }
+        if (e.key === 'ArrowUp' && opts.length) {
+          e.preventDefault();
+          var prev = cur ? cur.previousElementSibling : opts[opts.length - 1];
+          if (prev) { if (cur) cur.removeAttribute('aria-selected'); prev.setAttribute('aria-selected', 'true'); prev.scrollIntoView({ block: 'nearest' }); }
+          return;
+        }
+      });
+      listEl.addEventListener('click', function (e) {
+        var li = e.target.closest('li[data-value]');
+        if (li) selectValue(li.getAttribute('data-value'));
+      });
+    }
+
+    bindSearchableInput(countryInput, countryListEl, showCountryList, selectCountry);
+    bindSearchableInput(regionInput, regionListEl, showRegionList, selectRegion);
+
+    countryInput.addEventListener('blur', function () {
+      countryInput.value = canonicalCountry(countryInput.value);
+      setRegionAvailability();
+    });
+
+    regionInput.addEventListener('blur', function () {
+      var regions = getRegionsForCountry(countryInput.value);
+      var raw = String(regionInput.value || '').trim();
+      if (!raw) return;
+      for (var i = 0; i < regions.length; i++) {
+        if (regions[i].toLowerCase() === raw.toLowerCase()) {
+          regionInput.value = regions[i];
+          return;
+        }
+      }
+      regionInput.value = '';
+    });
+
+    document.addEventListener('click', function (e) {
+      if (countryWrap && !countryWrap.contains(e.target)) countryListEl.hidden = true;
+      if (regionWrap && !regionWrap.contains(e.target)) regionListEl.hidden = true;
+    });
+
+    global._refreshLinkedinRegionOptions = setRegionAvailability;
+    setRegionAvailability();
   }
 
   function init() {
@@ -1237,7 +1351,7 @@
     loadLinkedinFilterOptions().then(function () {
       initIndustrySearchable();
       initJobTitleSenioritySearchable();
-      initRegionByCountry();
+      initLinkedinGeoSearchables();
     });
 
     document.querySelectorAll('.leads-source-tab').forEach(function (btn) {
