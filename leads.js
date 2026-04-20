@@ -39,6 +39,7 @@
   var SENIORITY_OPTIONS = ['Any'].concat(PEAKYDEV_SENIORITY_ENUM);
   var REGIONS_BY_COUNTRY = {};
   var LINKEDIN_COUNTRY_OPTIONS = [];
+  var LINKEDIN_REGION_FALLBACK_OPTIONS = [];
 
   var FALLBACK_INDUSTRY_LIST = [
     'Accounting',
@@ -203,6 +204,36 @@
       })
       .catch(function () {
         applyLinkedinFilterData(buildFallbackLinkedinPayload());
+      });
+  }
+
+  function parseRegionMarkdownList(text) {
+    return String(text || '')
+      .split(/\r?\n/)
+      .map(function (line) {
+        // Support plain lines, markdown bullets, and numbered lists.
+        return line.replace(/^\s*(?:[-*+]\s+|\d+\.\s+)?/, '').trim();
+      })
+      .filter(function (line) {
+        if (!line) return false;
+        // Skip markdown headings and separator lines.
+        if (/^#+\s*/.test(line)) return false;
+        if (/^[-=_]{3,}$/.test(line)) return false;
+        return true;
+      });
+  }
+
+  function loadLinkedinRegionFallbackList() {
+    return fetch('/linkedin_region.md', { credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) return Promise.reject(new Error('linkedin region list ' + r.status));
+        return r.text();
+      })
+      .then(function (text) {
+        LINKEDIN_REGION_FALLBACK_OPTIONS = parseRegionMarkdownList(text);
+      })
+      .catch(function () {
+        LINKEDIN_REGION_FALLBACK_OPTIONS = [];
       });
   }
 
@@ -1231,6 +1262,9 @@
           if (r && r !== 'Any') all.push(r);
         }
       }
+      if (LINKEDIN_REGION_FALLBACK_OPTIONS && LINKEDIN_REGION_FALLBACK_OPTIONS.length) {
+        all = all.concat(LINKEDIN_REGION_FALLBACK_OPTIONS);
+      }
       return uniqList(all);
     }
 
@@ -1371,7 +1405,7 @@
 
     updateLeadLimitDisplay();
     applyLinkedinFilterData(buildFallbackLinkedinPayload());
-    loadLinkedinFilterOptions().then(function () {
+    Promise.all([loadLinkedinFilterOptions(), loadLinkedinRegionFallbackList()]).then(function () {
       initIndustrySearchable();
       initJobTitleSenioritySearchable();
       initLinkedinGeoSearchables();
