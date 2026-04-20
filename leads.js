@@ -1223,14 +1223,17 @@
 
     function setRegionAvailability() {
       var regions = getRegionsForCountry(countryInput.value);
-      var disabled = regions.length === 0;
-      regionInput.disabled = disabled;
-      regionInput.placeholder = disabled ? 'Pick a country first...' : 'Search state / province / region...';
-      if (disabled) regionInput.value = '';
+      // Keep region editable for all countries; for countries without mapped regions,
+      // allow manual typing instead of blocking the field.
+      var hasCountry = !!String(countryInput.value || '').trim();
+      regionInput.disabled = false;
+      regionInput.placeholder = hasCountry
+        ? (regions.length ? 'Search state / province / region...' : 'Type state / province / region...')
+        : 'Pick a country first...';
       if (regionInput.value) {
         var regionValue = String(regionInput.value).trim().toLowerCase();
         var exists = regions.some(function (r) { return r.toLowerCase() === regionValue; });
-        if (!exists) regionInput.value = '';
+        if (!exists && regions.length > 0) regionInput.value = '';
       }
       regionListEl.hidden = true;
     }
@@ -1314,6 +1317,10 @@
       var regions = getRegionsForCountry(countryInput.value);
       var raw = String(regionInput.value || '').trim();
       if (!raw) return;
+      if (!regions.length) {
+        // No mapped regions for this country: keep user-entered value.
+        return;
+      }
       for (var i = 0; i < regions.length; i++) {
         if (regions[i].toLowerCase() === raw.toLowerCase()) {
           regionInput.value = regions[i];
