@@ -1221,19 +1221,34 @@
       return uniqList(regions.filter(function (r) { return r && r !== 'Any'; }));
     }
 
+    function getAllKnownRegions() {
+      var all = [];
+      for (var country in REGIONS_BY_COUNTRY) {
+        if (!Object.prototype.hasOwnProperty.call(REGIONS_BY_COUNTRY, country)) continue;
+        var list = REGIONS_BY_COUNTRY[country] || [];
+        for (var i = 0; i < list.length; i++) {
+          var r = list[i];
+          if (r && r !== 'Any') all.push(r);
+        }
+      }
+      return uniqList(all);
+    }
+
     function setRegionAvailability() {
       var regions = getRegionsForCountry(countryInput.value);
+      var allKnownRegions = getAllKnownRegions();
       // Keep region editable for all countries; for countries without mapped regions,
       // allow manual typing instead of blocking the field.
       var hasCountry = !!String(countryInput.value || '').trim();
       regionInput.disabled = false;
       regionInput.placeholder = hasCountry
-        ? (regions.length ? 'Search state / province / region...' : 'Type state / province / region...')
+        ? (regions.length ? 'Search state / province / region...' : 'Search or type state / province / region...')
         : 'Pick a country first...';
       if (regionInput.value) {
         var regionValue = String(regionInput.value).trim().toLowerCase();
-        var exists = regions.some(function (r) { return r.toLowerCase() === regionValue; });
-        if (!exists && regions.length > 0) regionInput.value = '';
+        var sourceList = regions.length ? regions : allKnownRegions;
+        var exists = sourceList.some(function (r) { return r.toLowerCase() === regionValue; });
+        if (!exists && sourceList.length > 0 && regions.length > 0) regionInput.value = '';
       }
       regionListEl.hidden = true;
     }
@@ -1251,12 +1266,13 @@
 
     function showRegionList(filter) {
       var regions = getRegionsForCountry(countryInput.value);
-      if (!regions.length) {
+      var sourceList = regions.length ? regions : getAllKnownRegions();
+      if (!sourceList.length) {
         regionListEl.hidden = true;
         return;
       }
       var q = String(filter || '').toLowerCase().trim();
-      var options = regions.filter(function (label) {
+      var options = sourceList.filter(function (label) {
         return !q || label.toLowerCase().indexOf(q) !== -1;
       });
       regionListEl.innerHTML = options.slice(0, 250).map(function (label, i) {
