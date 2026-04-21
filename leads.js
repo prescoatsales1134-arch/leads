@@ -40,6 +40,13 @@
   var REGIONS_BY_COUNTRY = {};
   var LINKEDIN_COUNTRY_OPTIONS = [];
   var LINKEDIN_REGION_FALLBACK_OPTIONS = [];
+  var LINKEDIN_BLOCKED_COUNTRY_KEYS = {
+    'antigua and barbuda': true,
+    'trinidad and tobago': true,
+    'saint vincent and the grenadines': true,
+    'curacao': true,
+    'curaçao': true
+  };
 
   var FALLBACK_INDUSTRY_LIST = [
     'Accounting',
@@ -179,7 +186,11 @@
     REGIONS_BY_COUNTRY = data.regionsByCountry && typeof data.regionsByCountry === 'object'
       ? data.regionsByCountry
       : cloneRegionsFallback();
-    LINKEDIN_COUNTRY_OPTIONS = data.countries && data.countries.length ? data.countries.slice() : FALLBACK_COUNTRIES_LIST.slice();
+    var rawCountries = data.countries && data.countries.length ? data.countries.slice() : FALLBACK_COUNTRIES_LIST.slice();
+    LINKEDIN_COUNTRY_OPTIONS = rawCountries.filter(function (country) {
+      var key = String(country || '').trim().toLowerCase();
+      return key && !LINKEDIN_BLOCKED_COUNTRY_KEYS[key];
+    });
 
     var sizeSel = document.getElementById('filter-companySize');
     if (sizeSel && data.companySizes && data.companySizes.length) {
