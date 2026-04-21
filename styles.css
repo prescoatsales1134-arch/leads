@@ -1577,6 +1577,47 @@ body {
   text-decoration: underline;
 }
 
+/* ----- Tutorial page ----- */
+.tutorial-page {
+  max-width: 980px;
+}
+
+.tutorial-page .card {
+  margin-bottom: 1rem;
+}
+
+.tutorial-intro p,
+.tutorial-section p {
+  margin: 0 0 0.75rem;
+}
+
+.tutorial-bullets {
+  margin: 0.25rem 0 1rem;
+  padding-left: 1.1rem;
+}
+
+.tutorial-bullets li {
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+
+.tutorial-step-title {
+  margin: 1.1rem 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tutorial-cta {
+  text-align: left;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid var(--border);
+}
+
+.tutorial-cta .btn {
+  margin-top: 0.25rem;
+}
+
 .searchable-dropdown-wrap {
   position: relative;
   width: 100%;
