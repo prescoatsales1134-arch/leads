@@ -226,34 +226,85 @@ function resolveRole(adminClient, userId) {
     .catch(function () { return 'Manager'; });
 }
 
-// Lead generation limit: per calendar month. null = unlimited.
+function countUserLeadsSince(adminClient, userId, startIso) {
+  return adminClient
+    .from('user_leads')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', startIso)
+    .then(function (countRes) {
+      return (countRes && countRes.count != null) ? countRes.count : 0;
+    });
+}
+
+function countUserLeadsAllTime(adminClient, userId) {
+  return adminClient
+    .from('user_leads')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .then(function (countRes) {
+      return (countRes && countRes.count != null) ? countRes.count : 0;
+    });
+}
+
+// limit: null = unlimited; number = cap; used matches cap type (monthly vs all-time trial).
+// mode: 'unlimited' | 'monthly' | 'trial' | 'blocked'
 function getLeadLimitAndUsage(adminClient, userId) {
-  if (!adminClient || !userId) return Promise.resolve({ limit: null, used: 0 });
+  if (!adminClient || !userId) return Promise.resolve({ limit: null, used: 0, mode: 'unlimited' });
   var now = new Date();
   var startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   var startIso = startOfMonth.toISOString();
   return adminClient
     .from('profiles')
-    .select('lead_generation_limit')
+    .select('lead_generation_limit, trial_lifetime_limit')
     .eq('id', userId)
     .maybeSingle()
     .then(function (r) {
-      var limit = r.data && r.data.lead_generation_limit != null ? parseInt(r.data.lead_generation_limit, 10) : null;
-      if (limit != null && isNaN(limit)) limit = null;
-      return limit;
-    })
-    .then(function (limit) {
-      return adminClient
-        .from('user_leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .gte('created_at', startIso)
-        .then(function (countRes) {
-          var used = (countRes && countRes.count != null) ? countRes.count : 0;
-          return { limit: limit, used: used };
+      var row = r && r.data;
+      var rawLimit = row && row.lead_generation_limit != null && row.lead_generation_limit !== ''
+        ? parseInt(row.lead_generation_limit, 10) : null;
+      if (rawLimit != null && isNaN(rawLimit)) rawLimit = null;
+      var trialCap = row && row.trial_lifetime_limit != null ? parseInt(row.trial_lifetime_limit, 10) : 0;
+      if (isNaN(trialCap)) trialCap = 0;
+
+      if (rawLimit == null) {
+        return countUserLeadsSince(adminClient, userId, startIso).then(function (used) {
+          return { limit: null, used: used, mode: 'unlimited' };
         });
+      }
+      if (rawLimit > 0) {
+        return countUserLeadsSince(adminClient, userId, startIso).then(function (used) {
+          return { limit: rawLimit, used: used, mode: 'monthly' };
+        });
+      }
+      if (trialCap > 0) {
+        return countUserLeadsAllTime(adminClient, userId).then(function (used) {
+          return { limit: trialCap, used: used, mode: 'trial' };
+        });
+      }
+      return Promise.resolve({ limit: 0, used: 0, mode: 'blocked' });
     })
-    .catch(function () { return { limit: null, used: 0 }; });
+    .catch(function () { return { limit: null, used: 0, mode: 'unlimited' }; });
+}
+
+function leadLimitErrorFullBlock(info, prefix) {
+  if (info.mode === 'trial') {
+    return (prefix || '') + 'You have used your one-time free trial (' + info.used + '/' + info.limit + ' leads). Upgrade in Pricing to continue.';
+  }
+  if (info.mode === 'blocked') {
+    return (prefix || '') + 'You have no lead allocation yet. Add a plan in Pricing or ask your admin to set your monthly limit.';
+  }
+  return (prefix || '') + 'You have reached your lead generation limit for this month (' + info.used + '/' + info.limit + '). It resets at the start of next month.';
+}
+
+function leadLimitErrorRemaining(info, remaining) {
+  if (info.mode === 'trial') {
+    return 'You have ' + remaining + ' free trial lead' + (remaining === 1 ? '' : 's') + ' left. Set Max results to ' + remaining + ' or less.';
+  }
+  if (info.mode === 'blocked') {
+    return leadLimitErrorFullBlock(info);
+  }
+  return 'You have ' + remaining + ' leads remaining this month. Please set Max results to ' + remaining + ' or less.';
 }
 
 // ---------- Auth routes ----------
@@ -481,7 +532,7 @@ app.get('/api/profiles', function (req, res) {
       if (!auth) return res.status(401).json({ error: 'Invalid session' });
       return resolveRole(supabaseAdmin, auth.user.id).then(function (role) {
         if (role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
-        return supabaseAdmin.from('profiles').select('id, email, full_name, role, lead_generation_limit').order('email');
+        return supabaseAdmin.from('profiles').select('id, email, full_name, role, lead_generation_limit, trial_lifetime_limit').order('email');
       });
     })
     .then(function (result) {
@@ -592,7 +643,7 @@ app.get('/api/lead-limit', function (req, res) {
       var limit = info.limit;
       var used = info.used;
       var remaining = limit != null ? Math.max(0, limit - used) : null;
-      res.json({ limit: limit, used: used, remaining: remaining });
+      res.json({ limit: limit, used: used, remaining: remaining, mode: info.mode });
     }).catch(function () {
       if (!res.headersSent) res.status(500).json({ error: 'Server error' });
     });
@@ -766,8 +817,7 @@ app.post('/api/leads', function (req, res) {
       if (limit != null && (used + rows.length) > limit) {
         var remaining = Math.max(0, limit - used);
         if (remaining === 0) {
-          var msg = 'You have reached your monthly limit (' + used + '/' + limit + '). No leads were saved. It resets at the start of next month.';
-          return res.status(403).json({ error: msg });
+          return res.status(403).json({ error: leadLimitErrorFullBlock(info) + ' No leads were saved.' });
         }
         toSave = rows.slice(0, remaining);
         capped = true;
@@ -832,15 +882,13 @@ app.post('/api/generate-leads', function (req, res) {
       var limit = info.limit;
       var used = info.used;
       if (limit != null && used >= limit) {
-        var msg = 'You have reached your lead generation limit for this month (' + used + '/' + limit + '). It resets at the start of next month.';
-        return res.status(403).json({ error: msg });
+        return res.status(403).json({ error: leadLimitErrorFullBlock(info) });
       }
       var maxResults = body.maxResults != null ? parseInt(body.maxResults, 10) : (body.max_results != null ? parseInt(body.max_results, 10) : null);
       if (limit != null && typeof maxResults === 'number' && !isNaN(maxResults) && maxResults > 0) {
         var remaining = Math.max(0, limit - used);
         if (maxResults > remaining) {
-          var msg2 = 'You have ' + remaining + ' leads remaining this month. Please set Max results to ' + remaining + ' or less.';
-          return res.status(403).json({ error: msg2 });
+          return res.status(403).json({ error: leadLimitErrorRemaining(info, remaining) });
         }
       }
       var payload = {};
