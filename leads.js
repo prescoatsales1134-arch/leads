@@ -1098,6 +1098,11 @@
         var used = data.used != null ? data.used : 0;
         if (data.limit == null || data.limit === '') {
           el.textContent = 'Leads this month: ' + used + ' (unlimited)';
+        } else if (data.mode === 'trial') {
+          var remTrial = data.remaining != null ? data.remaining : Math.max(0, data.limit - used);
+          el.textContent = 'Free trial: ' + used + ' / ' + data.limit + ' leads used (' + remTrial + ' left, one time only)';
+        } else if (data.mode === 'blocked') {
+          el.textContent = 'No leads available — see Pricing or ask your admin.';
         } else {
           var remaining = data.remaining != null ? data.remaining : Math.max(0, data.limit - used);
           el.textContent = 'Leads this month: ' + used + ' / ' + data.limit + ' (' + remaining + ' remaining)';
