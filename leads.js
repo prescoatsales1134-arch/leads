@@ -428,7 +428,7 @@
         r.json().catch(function () { return {}; }).then(function (d) {
           if (global.utils && global.utils.toast && d && d.capped) {
             var notSaved = (d.notSaved != null) ? d.notSaved : 0;
-            var msg = d.saved + ' lead' + (d.saved !== 1 ? 's' : '') + ' saved (account limit reached).';
+            var msg = d.saved + ' lead' + (d.saved !== 1 ? 's' : '') + ' saved (monthly limit reached).';
             if (notSaved > 0) msg += ' ' + notSaved + ' not saved.';
             global.utils.toast(msg, 'info');
           }
@@ -1033,16 +1033,7 @@
           var loading = document.getElementById('generate-loading');
           if (loading) loading.hidden = true;
           if (global.utils && global.utils.toast) {
-            var rem = data.remaining;
-            var msg;
-            if (rem === 0 && (data.mode === 'trial' || data.mode === 'blocked')) {
-              msg = 'No free trial or paid allowance left. Open Pricing to get a plan, or ask your admin to set a monthly limit.';
-            } else if (data.mode === 'trial') {
-              msg = 'You have ' + rem + ' free trial lead' + (rem === 1 ? '' : 's') + ' left. Set Max results to ' + rem + ' or less.';
-            } else {
-              msg = 'You have ' + rem + ' leads remaining this month. Please set Max results to ' + rem + ' or less.';
-            }
-            global.utils.toast(msg, 'error');
+            global.utils.toast('You have ' + data.remaining + ' leads remaining this month. Please set Max results to ' + data.remaining + ' or less.', 'error');
           }
           return;
         }
@@ -1107,14 +1098,9 @@
         var used = data.used != null ? data.used : 0;
         if (data.limit == null || data.limit === '') {
           el.textContent = 'Leads this month: ' + used + ' (unlimited)';
-        } else if (data.mode === 'trial') {
-          var rTrial = data.remaining != null ? data.remaining : Math.max(0, data.limit - used);
-          el.textContent = 'Free trial: ' + used + ' / ' + data.limit + ' leads used (' + rTrial + ' left, one time only)';
-        } else if (data.mode === 'blocked') {
-          el.textContent = 'No leads available — add a plan under Pricing, or ask your admin.';
         } else {
-          var remaining2 = data.remaining != null ? data.remaining : Math.max(0, data.limit - used);
-          el.textContent = 'Leads this month: ' + used + ' / ' + data.limit + ' (' + remaining2 + ' remaining)';
+          var remaining = data.remaining != null ? data.remaining : Math.max(0, data.limit - used);
+          el.textContent = 'Leads this month: ' + used + ' / ' + data.limit + ' (' + remaining + ' remaining)';
         }
       })
       .catch(function () {

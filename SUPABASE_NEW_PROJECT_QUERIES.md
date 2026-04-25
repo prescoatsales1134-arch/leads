@@ -6,7 +6,7 @@ Run these in **Supabase Dashboard → SQL Editor**, in order. Use a **new** proj
 
 ## 1. Profiles table + RLS + signup trigger (run once)
 
-Creates `profiles` (role, lead limit, one-time trial cap), RLS, and a trigger so new signups get a profile with default role **Manager**, **0** paid leads/month, and a **100** one-time free trial (see [TRIAL_FREE_SETUP.md](./TRIAL_FREE_SETUP.md)).
+Creates `profiles` (role, lead limit), RLS, and a trigger so new signups get a profile with default role **Manager** and **0** leads/month (contact admin to increase).
 
 ```sql
 -- Table to store user profile and role
@@ -16,7 +16,6 @@ create table public.profiles (
   full_name text,
   role text check (role in ('Admin', 'Manager')) default 'Manager',
   lead_generation_limit integer,
-  trial_lifetime_limit integer not null default 0,
   updated_at timestamptz default now()
 );
 
@@ -41,14 +40,13 @@ create policy "Admins can update any profile"
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, full_name, role, lead_generation_limit, trial_lifetime_limit)
+  insert into public.profiles (id, email, full_name, role, lead_generation_limit)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'),
     coalesce(new.raw_user_meta_data->>'role', 'Manager'),
-    0,
-    100
+    0
   );
   return new;
 end;

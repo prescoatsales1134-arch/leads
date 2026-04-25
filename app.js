@@ -503,7 +503,6 @@
         tbody.innerHTML = data.map(function (p) {
           var currentRole = p.role || 'Manager';
           var limitVal = p.lead_generation_limit != null && p.lead_generation_limit !== '' ? String(p.lead_generation_limit) : '';
-          var trialCap = p.trial_lifetime_limit != null && p.trial_lifetime_limit !== '' ? String(p.trial_lifetime_limit) : '0';
           return '<tr data-user-id="' + escapeHtml(p.id) + '">' +
             '<td>' + escapeHtml(p.email || '—') + '</td>' +
             '<td>' + escapeHtml(p.full_name || '—') + '</td>' +
@@ -512,7 +511,6 @@
             '<option value="Admin"' + (currentRole === 'Admin' ? ' selected' : '') + '>Admin</option>' +
             '</select></td>' +
             '<td><input type="number" min="0" step="1" class="manage-user-limit input-narrow" data-user-id="' + escapeHtml(p.id) + '" value="' + escapeHtml(limitVal) + '" placeholder="Unlimited" title="Max leads per month; leave empty for unlimited" /></td>' +
-            '<td class="text-muted" title="One-time free-trial cap (set by the system; not edited here)">' + escapeHtml(trialCap) + '</td>' +
             '<td><button type="button" class="btn btn-secondary btn-sm btn-save-role" data-user-id="' + escapeHtml(p.id) + '">Save</button></td></tr>';
         }).join('');
 
