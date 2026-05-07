@@ -10,13 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --primary: #1A56DB;
-      --primary-hover: #2563EB;
-      --bg: #0A0A0F;
-      --card: #0F1117;
-      --text: #FFFFFF;
-      --text-muted: #94A3B8;
-      --border: #1E2A3A;
+      --primary: #8b5cf6;
+      --primary-hover: #a78bfa;
+      --bg: #0d0d0d;
+      --card: #1a1a1a;
+      --text: #ffffff;
+      --text-muted: #a3a3a3;
+      --border: rgba(255, 255, 255, 0.1);
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -60,7 +60,7 @@
       height: 100%;
       top: 0;
       left: 0;
-      background: radial-gradient(circle, rgba(26, 86, 219, 0.28) 0%, rgba(26, 86, 219, 0.08) 50%, transparent 70%);
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.32) 0%, rgba(139, 92, 246, 0.1) 50%, transparent 70%);
       filter: blur(60px);
       will-change: transform;
     }
@@ -146,20 +146,20 @@
       align-items: center;
       gap: 0.5rem;
       padding: 16px 34px;
-      background: linear-gradient(135deg, #0f2657 0%, #1a56db 100%);
+      background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 45%, #8b5cf6 100%);
       color: #fff;
-      border-radius: 14px;
+      border-radius: 18px;
       text-decoration: none;
       font-weight: 600;
       font-size: 1rem;
-      box-shadow: 0 4px 14px rgba(26, 86, 219, 0.4);
+      box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
       transition: transform 0.25s ease, box-shadow 0.25s ease;
       opacity: 0;
       animation: heroTitleIn 0.5s ease 0.9s forwards;
     }
     .about-hero-cta:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(26, 86, 219, 0.45);
+      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45);
     }
 
     /* Sections container */
