@@ -39,12 +39,11 @@
         if (!data) return;
         var used = data.used != null ? data.used : 0;
         if (data.limit == null && data.mode === 'unlimited') {
-          el.textContent = 'Content today: ' + used + ' (unlimited)';
-        } else if (data.mode === 'blocked' || (data.limit === 0 && data.mode !== 'daily')) {
-          el.textContent = 'No content generations — set posts/day in admin or upgrade.';
+          el.textContent = 'Posts per day: unlimited';
         } else {
-          var rem = data.remaining != null ? data.remaining : Math.max(0, (data.limit || 0) - used);
-          el.textContent = 'Content today: ' + used + ' / ' + data.limit + ' (' + rem + ' left, resets UTC midnight)';
+          var limit = data.limit != null ? data.limit : 0;
+          var rem = data.remaining != null ? data.remaining : Math.max(0, limit - used);
+          el.textContent = 'Posts per day: ' + limit + ' (' + rem + ' remaining)';
         }
       })
       .catch(function () {

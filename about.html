@@ -10,13 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --primary: #2563EB;
-      --primary-hover: #1d4ed8;
-      --bg: #F8FAFC;
-      --card: #ffffff;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
+      --primary: #1A56DB;
+      --primary-hover: #2563EB;
+      --bg: #0A0A0F;
+      --card: #0F1117;
+      --text: #FFFFFF;
+      --text-muted: #94A3B8;
+      --border: #1E2A3A;
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -27,6 +27,7 @@
       color: var(--text);
       line-height: 1.5;
       overflow-x: hidden;
+      background: var(--bg);
     }
     h1, h2, h3 {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -36,7 +37,7 @@
       position: fixed;
       inset: 0;
       z-index: 0;
-      background: linear-gradient(to bottom, #F8FAFC, #eef2f7);
+      background: linear-gradient(to bottom, #0A0A0F, #0F1117);
       overflow: hidden;
     }
 
@@ -59,7 +60,7 @@
       height: 100%;
       top: 0;
       left: 0;
-      background: radial-gradient(circle, rgba(37,99,235,0.35) 0%, rgba(37,99,235,0.1) 50%, transparent 70%);
+      background: radial-gradient(circle, rgba(26, 86, 219, 0.28) 0%, rgba(26, 86, 219, 0.08) 50%, transparent 70%);
       filter: blur(60px);
       will-change: transform;
     }
@@ -145,20 +146,20 @@
       align-items: center;
       gap: 0.5rem;
       padding: 16px 34px;
-      background: linear-gradient(#2563EB, #3b82f6);
+      background: linear-gradient(135deg, #0f2657 0%, #1a56db 100%);
       color: #fff;
       border-radius: 14px;
       text-decoration: none;
       font-weight: 600;
       font-size: 1rem;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+      box-shadow: 0 4px 14px rgba(26, 86, 219, 0.4);
       transition: transform 0.25s ease, box-shadow 0.25s ease;
       opacity: 0;
       animation: heroTitleIn 0.5s ease 0.9s forwards;
     }
     .about-hero-cta:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.45);
+      box-shadow: 0 8px 24px rgba(26, 86, 219, 0.45);
     }
 
     /* Sections container */
@@ -216,7 +217,7 @@
       align-items: start;
       gap: 16px;
       padding: 30px 0;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid var(--border);
       opacity: 0;
       transform: translateX(-40px);
       transition: all 0.6s ease;
@@ -241,7 +242,7 @@
     .feature-desc {
       margin: 0;
       font-size: 0.9375rem;
-      color: #64748b;
+      color: var(--text-muted);
       line-height: 1.6;
     }
     @media (max-width: 640px) {
@@ -303,7 +304,7 @@
       font-weight: 600;
     }
     .about-contact-links a {
-      color: #2563EB;
+      color: var(--primary);
       font-weight: 600;
       text-decoration: none;
     }

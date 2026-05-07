@@ -794,10 +794,10 @@ app.post('/api/content-generate', function (req, res) {
 
     getContentPostLimitAndUsage(supabaseAdmin, user.id).then(function (info) {
       if (info.mode === 'blocked') {
-        return res.status(403).json({ error: 'You have no content generations allocated. Ask your admin to set posts per day or upgrade in Pricing.' });
+        return res.status(403).json({ error: 'Posts per day: 0 (0 remaining).' });
       }
       if (info.limit != null && info.used >= info.limit) {
-        return res.status(403).json({ error: 'You have reached today\'s content limit (' + info.used + '/' + info.limit + '). It resets at UTC midnight.' });
+        return res.status(403).json({ error: 'Posts per day: ' + info.limit + ' (0 remaining).' });
       }
       var payload = {
         businessName: businessName,

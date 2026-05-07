@@ -20,7 +20,7 @@
 
     <h2 class="auth-form-title" id="auth-form-title">LOGIN</h2>
 
-    <div id="auth-error" class="auth-error" role="alert" style="color:#64748b;background:#f8fafc;">Loading config…</div>
+    <div id="auth-error" class="auth-error" role="alert" style="color:var(--text-secondary);background:var(--bg-elevated);border:1px solid var(--border);">Loading config…</div>
 
     <!-- Login / Sign up form -->
     <form id="auth-form" class="auth-form">
@@ -96,18 +96,29 @@
       function showErr(msg, isError) {
         errEl.textContent = msg;
         errEl.hidden = false;
-        errEl.style.color = isError !== false ? '#b91c1c' : '#64748b';
-        errEl.style.background = isError !== false ? '#fef2f2' : '#f8fafc';
+        if (isError !== false) {
+          errEl.style.color = '';
+          errEl.style.background = '';
+          errEl.style.border = '';
+        } else {
+          errEl.style.color = 'var(--text-secondary)';
+          errEl.style.background = 'var(--bg-elevated)';
+          errEl.style.border = '1px solid var(--border)';
+        }
       }
       function hideErr() {
         errEl.hidden = true;
         errEl.textContent = '';
+        errEl.style.color = '';
+        errEl.style.background = '';
+        errEl.style.border = '';
       }
       function setLoading(loading) {
         if (loading) {
           errEl.textContent = 'Loading config…';
-          errEl.style.color = '#64748b';
-          errEl.style.background = '#f8fafc';
+          errEl.style.color = 'var(--text-secondary)';
+          errEl.style.background = 'var(--bg-elevated)';
+          errEl.style.border = '1px solid var(--border)';
           errEl.hidden = false;
         }
       }
