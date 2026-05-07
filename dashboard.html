@@ -34,6 +34,10 @@
         <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
         <span class="menu-label">Leads</span>
       </a>
+      <a href="#content" class="nav-item" data-page="content">
+        <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></span>
+        <span class="menu-label">Content</span>
+      </a>
       <a href="#pricing" class="nav-item" data-page="pricing">
         <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
         <span class="menu-label">Pricing</span>
@@ -297,6 +301,126 @@
         </div>
       </section>
 
+      <!-- Content (AI social posts) -->
+      <section id="page-content" class="page content-tool-page">
+        <div class="content-tool-header-row">
+          <h1 class="page-title content-tool-page-title">Content</h1>
+          <span id="content-post-limit-display" class="lead-limit-display text-muted" aria-live="polite"></span>
+        </div>
+        <p class="text-muted content-tool-intro">Generate platform-ready social posts from your business brief. One generation run counts as one use toward your daily limit (UTC).</p>
+
+        <div class="content-tool-stepper" aria-hidden="true">
+          <div class="content-tool-step-dot active" id="content-dot1">1<span class="content-tool-step-label">Your business</span></div>
+          <div class="content-tool-step-connector" id="content-conn1"><div class="line"></div></div>
+          <div class="content-tool-step-dot inactive" id="content-dot2">2<span class="content-tool-step-label">Platforms</span></div>
+          <div class="content-tool-step-connector" id="content-conn2"><div class="line"></div></div>
+          <div class="content-tool-step-dot inactive" id="content-dot3">3<span class="content-tool-step-label">Topic &amp; tone</span></div>
+          <div class="content-tool-step-connector" id="content-conn3"><div class="line"></div></div>
+          <div class="content-tool-step-dot inactive" id="content-dot4">4<span class="content-tool-step-label">Results</span></div>
+        </div>
+
+        <div class="content-tool-panel visible" id="content-panel1">
+          <div class="card">
+            <h2 class="card-title">Tell us about your business</h2>
+            <p class="text-muted" style="margin-bottom: 1rem;">This helps the AI create content that sounds like you.</p>
+            <label class="field">
+              <span>Business name</span>
+              <input type="text" id="content-bizName" placeholder="e.g. Lead AI" autocomplete="organization" />
+            </label>
+            <label class="field">
+              <span>What does your business do?</span>
+              <textarea id="content-bizDesc" rows="4" placeholder="Short description of products, audience, and value."></textarea>
+            </label>
+            <label class="field">
+              <span>Target audience</span>
+              <input type="text" id="content-bizAudience" placeholder="e.g. B2B sales managers" />
+            </label>
+            <div class="form-actions-right">
+              <button type="button" class="btn btn-primary" id="content-go-step2">Continue</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-tool-panel" id="content-panel2">
+          <div class="card">
+            <h2 class="card-title">Choose your platforms</h2>
+            <p class="text-muted" style="margin-bottom: 1rem;">Select all platforms you want copy for.</p>
+            <div class="content-tool-platform-grid" id="content-platform-grid">
+              <button type="button" class="content-tool-platform-card" data-platform="linkedin"><span class="content-tool-platform-icon" aria-hidden="true">💼</span><span class="content-tool-platform-name">LinkedIn</span></button>
+              <button type="button" class="content-tool-platform-card" data-platform="twitter"><span class="content-tool-platform-icon" aria-hidden="true">𝕏</span><span class="content-tool-platform-name">Twitter / X</span></button>
+              <button type="button" class="content-tool-platform-card" data-platform="instagram"><span class="content-tool-platform-icon" aria-hidden="true">📷</span><span class="content-tool-platform-name">Instagram</span></button>
+              <button type="button" class="content-tool-platform-card" data-platform="facebook"><span class="content-tool-platform-icon" aria-hidden="true">🌐</span><span class="content-tool-platform-name">Facebook</span></button>
+              <button type="button" class="content-tool-platform-card" data-platform="tiktok"><span class="content-tool-platform-icon" aria-hidden="true">🎬</span><span class="content-tool-platform-name">TikTok</span></button>
+            </div>
+            <p id="content-platform-error" class="content-tool-field-error" hidden>Please select at least one platform.</p>
+            <div class="form-actions-split">
+              <button type="button" class="btn btn-secondary" id="content-back-1">Back</button>
+              <button type="button" class="btn btn-primary" id="content-go-step3">Continue</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-tool-panel" id="content-panel3">
+          <div class="card">
+            <h2 class="card-title">What should we write about?</h2>
+            <p class="text-muted" style="margin-bottom: 1rem;">Topic, tone, and goal drive the output.</p>
+            <label class="field">
+              <span>Content topic or idea</span>
+              <textarea id="content-topic" rows="4" placeholder="e.g. Launching a new feature, client win, or hot take for your industry."></textarea>
+            </label>
+            <div class="form-grid">
+              <label class="field">
+                <span>Tone</span>
+                <select id="content-tone">
+                  <option value="professional">Professional &amp; Authoritative</option>
+                  <option value="casual">Casual &amp; Conversational</option>
+                  <option value="inspirational">Inspirational &amp; Motivating</option>
+                  <option value="educational">Educational &amp; Informative</option>
+                  <option value="humorous">Witty &amp; Humorous</option>
+                  <option value="bold">Bold &amp; Provocative</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Content goal</span>
+                <select id="content-goal">
+                  <option value="awareness">Brand Awareness</option>
+                  <option value="engagement">Drive Engagement</option>
+                  <option value="leads">Generate Leads</option>
+                  <option value="education">Educate Audience</option>
+                  <option value="launch">Product Launch</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-actions-split">
+              <button type="button" class="btn btn-secondary" id="content-back-2">Back</button>
+              <button type="button" class="btn btn-primary" id="content-generate-btn">Generate content</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-tool-panel" id="content-panel4">
+          <div class="card">
+            <h2 class="card-title">Your content is ready</h2>
+            <p class="text-muted" style="margin-bottom: 1rem;">Copy and paste into each platform.</p>
+            <div class="content-tool-result-tabs" id="content-result-tabs"></div>
+            <div id="content-result-body"></div>
+            <div class="form-actions-split" style="margin-top: 1.25rem;">
+              <button type="button" class="btn btn-secondary" id="content-back-3">Edit &amp; regenerate</button>
+              <button type="button" class="btn btn-ghost" id="content-start-over">Start new</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-tool-loading" id="content-loading-overlay" hidden>
+          <div class="content-tool-loading-backdrop"></div>
+          <div class="content-tool-loading-card">
+            <div class="content-tool-spinner" aria-hidden="true"></div>
+            <p class="content-tool-loading-text" id="content-loading-text">Crafting your content…</p>
+            <p class="text-muted content-tool-loading-sub">This may take 15–45 seconds.</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Pricing -->
       <section id="page-pricing" class="page page-pricing-wrap">
         <div class="pricing-page-layer" aria-hidden="true"></div>
@@ -310,13 +434,17 @@
               <h2 class="pricing-plan-name">Basic</h2>
               <p class="pricing-tagline">Best for getting started</p>
               <div class="pricing-price-block">
-                <p class="pricing-price"><span class="pricing-amount">$7</span><span class="pricing-period">/month</span></p>
+                <p class="pricing-price"><span class="pricing-amount">$20</span><span class="pricing-period">/month</span></p>
               </div>
               <div class="pricing-divider" role="presentation"></div>
               <ul class="pricing-features">
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                   <span>500 leads per month</span>
+                </li>
+                <li>
+                  <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span>1 post per day (content)</span>
                 </li>
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -337,13 +465,17 @@
               <h2 class="pricing-plan-name">Standard</h2>
               <p class="pricing-tagline">Everything you need to scale</p>
               <div class="pricing-price-block">
-                <p class="pricing-price"><span class="pricing-amount">$25</span><span class="pricing-period">/month</span></p>
+                <p class="pricing-price"><span class="pricing-amount">$35</span><span class="pricing-period">/month</span></p>
               </div>
               <div class="pricing-divider" role="presentation"></div>
               <ul class="pricing-features">
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                   <span>2,500 leads per month</span>
+                </li>
+                <li>
+                  <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span>2 posts per day (content)</span>
                 </li>
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -362,13 +494,17 @@
               <h2 class="pricing-plan-name">Premium</h2>
               <p class="pricing-tagline">For heavy users</p>
               <div class="pricing-price-block">
-                <p class="pricing-price"><span class="pricing-amount">$48</span><span class="pricing-period">/month</span></p>
+                <p class="pricing-price"><span class="pricing-amount">$55</span><span class="pricing-period">/month</span></p>
               </div>
               <div class="pricing-divider" role="presentation"></div>
               <ul class="pricing-features">
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                   <span>7,500 leads per month</span>
+                </li>
+                <li>
+                  <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span>3 posts per day (content)</span>
                 </li>
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -657,6 +793,7 @@
         .then(function() { return loadScript('utils.js'); })
         .then(function() { return loadScript('auth.js'); })
         .then(function() { return loadScript('leads.js'); })
+        .then(function() { return loadScript('content-tool.js'); })
         .then(function() { return loadScript('message-assistant.js'); })
         .then(function() { return loadScript('chatbot.js?v=3'); })
         .then(function() { return loadScript('app.js?v=3'); })

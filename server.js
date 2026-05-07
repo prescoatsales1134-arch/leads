@@ -13,6 +13,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { createClient } = require('@supabase/supabase-js');
+const contentGenLib = require('./content-generate-lib');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +34,7 @@ var chatbotUrl = (process.env.N8N_CHATBOT_WEBHOOK || '').trim();
 console.log('[env] N8N_CHATBOT_WEBHOOK:', chatbotUrl ? 'configured' : 'not set (chat will show "webhook not configured")');
 var messageAssistantUrl = (process.env.N8N_MESSAGE_ASSISTANT_WEBHOOK || '').trim();
 console.log('[env] N8N_MESSAGE_ASSISTANT_WEBHOOK:', messageAssistantUrl ? 'configured' : 'not set (message assistant below Generate Leads will show "webhook not configured")');
+console.log('[env] OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'configured' : 'not set (Content tab will return 503)');
 
 // Supabase: anon key for auth (OAuth, getUser, signIn, signUp); service_role for admin-only (profiles)
 const supabaseAuth = supabaseUrl && supabaseAnonKey
@@ -316,6 +318,66 @@ function leadLimitErrorRemaining(info, remaining) {
     return leadLimitErrorFullBlock(info);
   }
   return 'You have ' + remaining + ' leads remaining this month. Please set Max results to ' + remaining + ' or less.';
+}
+
+// --- Content generation: daily cap (UTC day). One successful POST /api/content-generate = 1 use. ---
+function utcDayBounds() {
+  var now = new Date();
+  var start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+  var end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0));
+  return { startIso: start.toISOString(), endIso: end.toISOString() };
+}
+
+function readContentPostsPerDay(adminClient, userId) {
+  return adminClient
+    .from('profiles')
+    .select('content_posts_per_day')
+    .eq('id', userId)
+    .maybeSingle()
+    .then(function (r) {
+      if (!r || r.error || !r.data) return undefined;
+      var v = r.data.content_posts_per_day;
+      if (v === null) return null;
+      if (v === undefined || v === '') return 0;
+      var n = parseInt(v, 10);
+      if (isNaN(n) || n < 0) return 0;
+      return n;
+    })
+    .catch(function () { return undefined; });
+}
+
+function getContentPostLimitAndUsage(adminClient, userId) {
+  if (!adminClient || !userId) return Promise.resolve({ limit: null, used: 0, mode: 'unlimited' });
+  var bounds = utcDayBounds();
+  return readContentPostsPerDay(adminClient, userId).then(function (raw) {
+    if (raw === undefined) {
+      return { limit: 0, used: 0, mode: 'blocked' };
+    }
+    function countToday() {
+      return adminClient
+        .from('content_generation_log')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', bounds.startIso)
+        .lt('created_at', bounds.endIso)
+        .then(function (c) {
+          return (c && c.count != null) ? c.count : 0;
+        });
+    }
+    if (raw === null) {
+      return countToday().then(function (used) {
+        return { limit: null, used: used, mode: 'unlimited' };
+      });
+    }
+    if (raw === 0) {
+      return Promise.resolve({ limit: 0, used: 0, mode: 'blocked' });
+    }
+    return countToday().then(function (used) {
+      return { limit: raw, used: used, mode: 'daily' };
+    });
+  }).catch(function () {
+    return { limit: 0, used: 0, mode: 'blocked' };
+  });
 }
 
 // ---------- Auth routes ----------
@@ -655,6 +717,138 @@ app.get('/api/lead-limit', function (req, res) {
       var used = info.used;
       var remaining = limit != null ? Math.max(0, limit - used) : null;
       res.json({ limit: limit, used: used, remaining: remaining, mode: info.mode });
+    }).catch(function () {
+      if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+    });
+  });
+});
+
+// GET /api/content-post-limit — daily content generation cap (UTC day)
+app.get('/api/content-post-limit', function (req, res) {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
+  requireUser(req, res, function (user) {
+    if (res.headersSent) return;
+    getContentPostLimitAndUsage(supabaseAdmin, user.id).then(function (info) {
+      var limit = info.limit;
+      var used = info.used;
+      var remaining = limit != null ? Math.max(0, limit - used) : null;
+      res.json({ limit: limit, used: used, remaining: remaining, mode: info.mode });
+    }).catch(function () {
+      if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+    });
+  });
+});
+
+// POST /api/content-generate — OpenAI (server-side); enforces daily cap; logs one row per successful run
+app.post('/api/content-generate', function (req, res) {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
+  var apiKey = (process.env.OPENAI_API_KEY || '').trim();
+  var model = (process.env.OPENAI_CONTENT_MODEL || 'gpt-4.1').trim();
+  if (!apiKey) return res.status(503).json({ error: 'OpenAI not configured on server (set OPENAI_API_KEY)' });
+  requireUser(req, res, function (user) {
+    if (res.headersSent) return;
+    var body = req.body && typeof req.body === 'object' ? req.body : {};
+    var businessName = body.businessName != null ? String(body.businessName).trim() : '';
+    var businessDescription = body.businessDescription != null ? String(body.businessDescription).trim() : '';
+    var targetAudience = body.targetAudience != null ? String(body.targetAudience).trim() : '';
+    var contentTopic = body.contentTopic != null ? String(body.contentTopic).trim() : '';
+    var tone = body.tone != null ? String(body.tone).trim() : 'professional';
+    var contentGoal = body.contentGoal != null ? String(body.contentGoal).trim() : 'awareness';
+    var platforms = Array.isArray(body.platforms) ? body.platforms : [];
+    var allowed = {};
+    contentGenLib.ALLOWED_PLATFORMS.forEach(function (p) { allowed[p] = true; });
+    platforms = platforms.map(function (p) { return String(p).toLowerCase().trim(); }).filter(function (p) { return allowed[p]; });
+    platforms = Array.from(new Set(platforms));
+    if (!businessName || !businessDescription) {
+      return res.status(400).json({ error: 'businessName and businessDescription are required' });
+    }
+    if (!contentTopic) return res.status(400).json({ error: 'contentTopic is required' });
+    if (platforms.length === 0) return res.status(400).json({ error: 'At least one valid platform is required' });
+
+    getContentPostLimitAndUsage(supabaseAdmin, user.id).then(function (info) {
+      if (info.mode === 'blocked') {
+        return res.status(403).json({ error: 'You have no content generations allocated. Ask your admin to set posts per day or upgrade in Pricing.' });
+      }
+      if (info.limit != null && info.used >= info.limit) {
+        return res.status(403).json({ error: 'You have reached today\'s content limit (' + info.used + '/' + info.limit + '). It resets at UTC midnight.' });
+      }
+      var payload = {
+        businessName: businessName,
+        businessDescription: businessDescription,
+        targetAudience: targetAudience,
+        contentTopic: contentTopic,
+        tone: tone,
+        contentGoal: contentGoal,
+        platforms: platforms
+      };
+      var userMsg = contentGenLib.buildContentUserPrompt(payload);
+      return fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+          model: model,
+          max_tokens: 4000,
+          temperature: 0.75,
+          messages: [
+            { role: 'system', content: contentGenLib.SYSTEM_PROMPT },
+            { role: 'user', content: userMsg }
+          ]
+        })
+      })
+        .then(function (wh) {
+          return wh.text().then(function (txt) {
+            return { ok: wh.ok, status: wh.status, raw: txt || '' };
+          });
+        })
+        .then(function (ref) {
+          if (!ref.ok) {
+            var detail = ref.raw;
+            try {
+              var j = JSON.parse(ref.raw);
+              detail = (j && j.error && j.error.message) || detail;
+            } catch (e) { /* ignore */ }
+            return res.status(502).json({ error: detail || ('OpenAI error HTTP ' + ref.status) });
+          }
+          var data;
+          try {
+            data = JSON.parse(ref.raw);
+          } catch (e) {
+            return res.status(502).json({ error: 'Invalid response from OpenAI' });
+          }
+          var rawContent = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+          rawContent = (rawContent || '').replace(/```json|```/g, '').trim();
+          var parsed;
+          try {
+            parsed = JSON.parse(rawContent);
+          } catch (e) {
+            return res.status(502).json({ error: 'Could not parse AI output as JSON' });
+          }
+          if (!Array.isArray(parsed)) {
+            return res.status(502).json({ error: 'AI output must be a JSON array' });
+          }
+          var normalised = parsed.map(function (p) {
+            return {
+              platform: p.platform,
+              content: p.content,
+              hashtags: p.hashtags,
+              callToAction: p.callToAction,
+              postType: p.postType,
+              characterCount: p.characterCount || (p.content && p.content.length) || 0
+            };
+          });
+          return supabaseAdmin.from('content_generation_log').insert({ user_id: user.id }).then(function (ins) {
+            if (ins.error) {
+              console.error('[content-generate] log insert failed:', ins.error.message);
+            }
+            res.json({ posts: normalised });
+          });
+        })
+        .catch(function (err) {
+          if (!res.headersSent) res.status(502).json({ error: err && err.message ? err.message : 'Content generation failed' });
+        });
     }).catch(function () {
       if (!res.headersSent) res.status(500).json({ error: 'Server error' });
     });
