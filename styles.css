@@ -1085,8 +1085,13 @@ body {
   color: var(--text);
 }
 
+.field + .field {
+  margin-top: 1rem;
+}
+
 .field input,
-.field select {
+.field select,
+.field textarea {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -1097,8 +1102,15 @@ body {
   transition: border-color var(--transition);
 }
 
+.field textarea {
+  resize: vertical;
+  min-height: 5rem;
+  line-height: 1.5;
+}
+
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-light);
@@ -2582,11 +2594,31 @@ body.modal-open {
 .content-tool-stepper {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: 0;
-  margin-bottom: 1.5rem;
-  position: relative;
+  gap: 0.35rem 0.15rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 0.25rem;
+}
+
+.content-tool-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 5.25rem;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.content-tool-step-caption {
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  line-height: 1.25;
+  max-width: 5.5rem;
 }
 
 .content-tool-step-dot {
@@ -2598,8 +2630,7 @@ body.modal-open {
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 600;
-  position: relative;
-  z-index: 1;
+  flex-shrink: 0;
   border: 2px solid var(--border);
   background: var(--card-bg);
   color: var(--text-muted);
@@ -2617,23 +2648,12 @@ body.modal-open {
   border-color: var(--success);
 }
 
-.content-tool-step-label {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-top: 0.35rem;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
 .content-tool-step-connector {
-  width: 2rem;
+  width: clamp(0.75rem, 4vw, 2.5rem);
+  flex-shrink: 1;
   display: flex;
   align-items: center;
+  min-height: 2.25rem;
 }
 
 .content-tool-step-connector .line {
@@ -2644,6 +2664,16 @@ body.modal-open {
 
 .content-tool-step-connector.filled .line {
   background: var(--primary);
+}
+
+@media (max-width: 640px) {
+  .content-tool-step {
+    width: 4.5rem;
+  }
+  .content-tool-step-caption {
+    max-width: 4.5rem;
+    font-size: 0.6rem;
+  }
 }
 
 .content-tool-panel {

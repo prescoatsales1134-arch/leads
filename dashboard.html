@@ -310,13 +310,25 @@
         <p class="text-muted content-tool-intro">Generate platform-ready social posts from your business brief. One generation run counts as one use toward your daily limit (UTC).</p>
 
         <div class="content-tool-stepper" aria-hidden="true">
-          <div class="content-tool-step-dot active" id="content-dot1">1<span class="content-tool-step-label">Your business</span></div>
+          <div class="content-tool-step">
+            <div class="content-tool-step-dot active" id="content-dot1">1</div>
+            <span class="content-tool-step-caption">Your business</span>
+          </div>
           <div class="content-tool-step-connector" id="content-conn1"><div class="line"></div></div>
-          <div class="content-tool-step-dot inactive" id="content-dot2">2<span class="content-tool-step-label">Platforms</span></div>
+          <div class="content-tool-step">
+            <div class="content-tool-step-dot inactive" id="content-dot2">2</div>
+            <span class="content-tool-step-caption">Platforms</span>
+          </div>
           <div class="content-tool-step-connector" id="content-conn2"><div class="line"></div></div>
-          <div class="content-tool-step-dot inactive" id="content-dot3">3<span class="content-tool-step-label">Topic &amp; tone</span></div>
+          <div class="content-tool-step">
+            <div class="content-tool-step-dot inactive" id="content-dot3">3</div>
+            <span class="content-tool-step-caption">Topic &amp; tone</span>
+          </div>
           <div class="content-tool-step-connector" id="content-conn3"><div class="line"></div></div>
-          <div class="content-tool-step-dot inactive" id="content-dot4">4<span class="content-tool-step-label">Results</span></div>
+          <div class="content-tool-step">
+            <div class="content-tool-step-dot inactive" id="content-dot4">4</div>
+            <span class="content-tool-step-caption">Results</span>
+          </div>
         </div>
 
         <div class="content-tool-panel visible" id="content-panel1">
@@ -683,6 +695,7 @@
                   <th>Name</th>
                   <th>Role</th>
                   <th>Lead limit <span class="text-muted" style="font-weight:normal;">/month</span></th>
+                  <th>Posts/day <span class="text-muted" style="font-weight:normal;">(UTC)</span></th>
                   <th></th>
                 </tr>
               </thead>

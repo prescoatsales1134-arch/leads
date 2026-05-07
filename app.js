@@ -503,6 +503,7 @@
         tbody.innerHTML = data.map(function (p) {
           var currentRole = p.role || 'Manager';
           var limitVal = p.lead_generation_limit != null && p.lead_generation_limit !== '' ? String(p.lead_generation_limit) : '';
+          var postsDayVal = p.content_posts_per_day != null && p.content_posts_per_day !== '' ? String(p.content_posts_per_day) : '';
           return '<tr data-user-id="' + escapeHtml(p.id) + '">' +
             '<td>' + escapeHtml(p.email || '—') + '</td>' +
             '<td>' + escapeHtml(p.full_name || '—') + '</td>' +
@@ -511,6 +512,7 @@
             '<option value="Admin"' + (currentRole === 'Admin' ? ' selected' : '') + '>Admin</option>' +
             '</select></td>' +
             '<td><input type="number" min="0" step="1" class="manage-user-limit input-narrow" data-user-id="' + escapeHtml(p.id) + '" value="' + escapeHtml(limitVal) + '" placeholder="Unlimited" title="Max leads per month; leave empty for unlimited" /></td>' +
+            '<td><input type="number" min="0" step="1" class="manage-user-content-posts input-narrow" data-user-id="' + escapeHtml(p.id) + '" value="' + escapeHtml(postsDayVal) + '" placeholder="Unlimited" title="Max content generations per UTC day; leave empty for unlimited; 0 blocks" /></td>' +
             '<td><button type="button" class="btn btn-secondary btn-sm btn-save-role" data-user-id="' + escapeHtml(p.id) + '">Save</button></td></tr>';
         }).join('');
 
@@ -520,11 +522,15 @@
             var row = btn.closest('tr');
             var select = row ? row.querySelector('.manage-user-role') : null;
             var limitInput = row ? row.querySelector('.manage-user-limit') : null;
+            var postsInput = row ? row.querySelector('.manage-user-content-posts') : null;
             if (!select) return;
             var newRole = select.value;
             var limitRaw = limitInput ? limitInput.value.trim() : '';
             var limitBody = limitRaw === '' ? null : parseInt(limitRaw, 10);
             if (limitRaw !== '' && (isNaN(limitBody) || limitBody < 0)) limitBody = null;
+            var postsRaw = postsInput ? postsInput.value.trim() : '';
+            var postsBody = postsRaw === '' ? null : parseInt(postsRaw, 10);
+            if (postsRaw !== '' && (isNaN(postsBody) || postsBody < 0)) postsBody = null;
             btn.disabled = true;
             var rolePromise = fetch('/api/profiles/' + encodeURIComponent(userId) + '/role', {
               method: 'PATCH',
@@ -538,13 +544,20 @@
               body: JSON.stringify({ lead_generation_limit: limitBody }),
               credentials: 'same-origin'
             });
-            Promise.all([rolePromise, limitPromise])
+            var contentPostsPromise = fetch('/api/profiles/' + encodeURIComponent(userId) + '/content_post_limit', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content_posts_per_day: postsBody }),
+              credentials: 'same-origin'
+            });
+            Promise.all([rolePromise, limitPromise, contentPostsPromise])
               .then(function (responses) {
                 btn.disabled = false;
                 var roleOk = responses[0].ok;
                 var limitOk = responses[1].ok;
-                if (roleOk && limitOk && global.utils && global.utils.toast) global.utils.toast('Saved', 'success');
-                else if ((!roleOk || !limitOk) && global.utils && global.utils.toast) global.utils.toast('Failed to save', 'error');
+                var postsOk = responses[2].ok;
+                if (roleOk && limitOk && postsOk && global.utils && global.utils.toast) global.utils.toast('Saved', 'success');
+                else if ((!roleOk || !limitOk || !postsOk) && global.utils && global.utils.toast) global.utils.toast('Failed to save', 'error');
               })
               .catch(function () {
                 btn.disabled = false;

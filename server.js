@@ -605,7 +605,7 @@ app.get('/api/profiles', function (req, res) {
       if (!auth) return res.status(401).json({ error: 'Invalid session' });
       return resolveRole(supabaseAdmin, auth.user.id).then(function (role) {
         if (role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
-        return supabaseAdmin.from('profiles').select('id, email, full_name, role, lead_generation_limit').order('email');
+        return supabaseAdmin.from('profiles').select('id, email, full_name, role, lead_generation_limit, content_posts_per_day').order('email');
       });
     })
     .then(function (result) {
@@ -657,6 +657,33 @@ app.patch('/api/profiles/:id/lead_limit', function (req, res) {
       return resolveRole(supabaseAdmin, auth.user.id).then(function (currentRole) {
         if (currentRole !== 'Admin') return res.status(403).json({ error: 'Admin only' });
         return supabaseAdmin.from('profiles').update({ lead_generation_limit: value }).eq('id', targetUserId).select();
+      });
+    })
+    .then(function (result) {
+      if (res.headersSent) return;
+      if (result && result.error) return res.status(500).json({ error: result.error.message });
+      res.json({ ok: true });
+    })
+    .catch(function () {
+      if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+    });
+});
+
+app.patch('/api/profiles/:id/content_post_limit', function (req, res) {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
+  const targetUserId = req.params.id;
+  const raw = req.body && req.body.content_posts_per_day;
+  const value = raw === null || raw === undefined || raw === '' ? null : parseInt(raw, 10);
+  if (value !== null && (isNaN(value) || value < 0)) {
+    return res.status(400).json({ error: 'content_posts_per_day must be a non-negative number or null (unlimited)' });
+  }
+  if (!targetUserId) return res.status(400).json({ error: 'Missing user id' });
+  getAuthUser(req, res)
+    .then(function (auth) {
+      if (!auth) return res.status(401).json({ error: 'Invalid session' });
+      return resolveRole(supabaseAdmin, auth.user.id).then(function (currentRole) {
+        if (currentRole !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+        return supabaseAdmin.from('profiles').update({ content_posts_per_day: value }).eq('id', targetUserId).select();
       });
     })
     .then(function (result) {
