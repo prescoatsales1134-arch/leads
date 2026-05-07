@@ -1160,6 +1160,9 @@ body {
   background: var(--card-bg);
   color: var(--text);
   transition: border-color var(--transition);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .field textarea {
@@ -2625,6 +2628,10 @@ body.modal-open {
     grid-template-columns: 1fr;
   }
 
+  .content-tool-page .form-grid {
+    grid-template-columns: 1fr;
+  }
+
   .table-toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -2686,6 +2693,22 @@ body.modal-open {
   gap: 0.75rem;
   margin-top: 1rem;
   flex-wrap: wrap;
+}
+
+/* Tone + Content goal: equal columns so labels align with controls */
+.content-tool-page .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+  align-items: start;
+}
+
+.content-tool-page .form-grid > .field {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.content-tool-page .form-grid > .field + .field {
+  margin-top: 0;
 }
 
 .content-tool-stepper {
@@ -2782,8 +2805,10 @@ body.modal-open {
 }
 
 .content-tool-platform-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
@@ -2801,6 +2826,9 @@ body.modal-open {
   font-family: inherit;
   font-size: 0.8125rem;
   transition: border-color var(--transition), box-shadow var(--transition);
+  flex: 0 1 140px;
+  min-width: 124px;
+  max-width: 160px;
 }
 
 .content-tool-platform-card:hover {
