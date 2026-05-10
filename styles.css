@@ -2903,9 +2903,27 @@ body.modal-open {
 }
 
 .content-tool-copy-btn {
+  position: static;
+}
+
+.content-tool-result-actions {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  max-width: min(100% - 1.5rem, 22rem);
+  z-index: 1;
+}
+
+.content-tool-post-image {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .content-tool-result-text {

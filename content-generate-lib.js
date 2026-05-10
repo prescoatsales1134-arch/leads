@@ -85,8 +85,19 @@ var SYSTEM_PROMPT =
   '\n' +
   '7. **Self-review** — Does this sound like a real person wrote it? Would I stop scrolling for this? Is the CTA natural? Is it within the character limit?\n' +
   '\n' +
+  '# BRANDED VISUAL CARD (REQUIRED FOR EVERY POST)\n' +
+  'Each post will be rendered as a 1080×1080 social graphic (headline, layout, colors). You MUST include these design fields on every object in the array — they are independent of the caption text but should match the same topic and mood.\n' +
+  '- **layout_style**: Choose based on the topic. Use `listicle` for tips, steps, or numbered lists. Use `quote` for strong insights or one-liner wisdom. Use `split` for comparisons, pros/cons, or paired ideas. Use `hero` for announcements, launches, or bold single-message posts.\n' +
+  '- **accent_color**, **bg_gradient_from**, **bg_gradient_to**: Valid 6-digit hex (e.g. #7C3AED). Match **accent_color** to topic mood: warm tones for energy/sales; cool blues for tech/trust; greens for growth/sustainability; purples for AI/innovation. Gradients should be two dark hex colors that pair with the accent.\n' +
+  '- **headline**: Short hook for the card (Title Case), 3–7 words — can echo but need not duplicate the first line of `content`.\n' +
+  '- **subheadline**: 10–22 words expanding the hook for the card.\n' +
+  '- **bullets**: Array of at most 3 strings, max ~6 words each, action-oriented; used heavily in `listicle` and as chips in `split`.\n' +
+  '- **cta_button**: 2–4 words for the on-image button (e.g. "Learn More") — this is visual only; `callToAction` remains the real CTA for the post.\n' +
+  '- **category_tag**: 1–2 words, ALL CAPS (e.g. INSIGHTS, TIPS).\n' +
+  '- **emoji**: One relevant emoji for the card header.\n' +
+  '\n' +
   '# OUTPUT FORMAT\n' +
-  'Return a JSON array only. No explanation, no markdown, no code fences. Each object must contain exactly these fields:\n' +
+  'Return a JSON array only. No explanation, no markdown, no code fences. Each object must contain exactly these fields (copy fields + visual card fields):\n' +
   '[\n' +
   '  {\n' +
   '    "platform": "linkedin",\n' +
@@ -94,7 +105,17 @@ var SYSTEM_PROMPT =
   '    "hashtags": ["#Tag1", "#Tag2"],\n' +
   '    "callToAction": "...",\n' +
   '    "postType": "text",\n' +
-  '    "characterCount": 820\n' +
+  '    "characterCount": 820,\n' +
+  '    "headline": "Three To Seven Words Here",\n' +
+  '    "subheadline": "Ten to twenty-two words that expand the hook for the branded card.",\n' +
+  '    "bullets": ["Short chip one", "Short chip two", "Optional third"],\n' +
+  '    "cta_button": "Learn More",\n' +
+  '    "accent_color": "#7C3AED",\n' +
+  '    "bg_gradient_from": "#0F172A",\n' +
+  '    "bg_gradient_to": "#1E1B4B",\n' +
+  '    "layout_style": "hero",\n' +
+  '    "category_tag": "INSIGHTS",\n' +
+  '    "emoji": "✨"\n' +
   '  }\n' +
   ']\n' +
   'Return the JSON array and nothing else.\n' +
@@ -208,15 +229,26 @@ function buildContentUserPrompt(payload) {
     '- The content field must NOT contain hashtags — hashtags go in the hashtags array only\n' +
     '- characterCount must be the exact integer length of the content string\n' +
     '\n' +
-    'Required schema for each object:\n' +
+    'Required schema for each object (include ALL keys — copy + branded card):\n' +
     '{\n' +
     '  "platform": "linkedin | twitter | instagram | facebook | tiktok",\n' +
     '  "content": "full post body — no hashtags here",\n' +
     '  "hashtags": ["#Tag1", "#Tag2"],\n' +
     '  "callToAction": "the exact CTA line used in the post",\n' +
     '  "postType": "text | carousel | image | video_script",\n' +
-    '  "characterCount": 0\n' +
+    '  "characterCount": 0,\n' +
+    '  "headline": "3-7 words, Title Case, bold hook for the image card",\n' +
+    '  "subheadline": "10-22 words for the card (not the caption)",\n' +
+    '  "bullets": ["max 3 items", "max ~6 words each", "action-oriented"],\n' +
+    '  "cta_button": "2-4 words, e.g. Learn More",\n' +
+    '  "accent_color": "#RRGGBB",\n' +
+    '  "bg_gradient_from": "#RRGGBB dark",\n' +
+    '  "bg_gradient_to": "#RRGGBB slightly different dark",\n' +
+    '  "layout_style": "hero | split | quote | listicle",\n' +
+    '  "category_tag": "1-2 words ALL CAPS",\n' +
+    '  "emoji": "one emoji"\n' +
     '}\n' +
+    'layout_style: pick per topic — listicle / quote / split / hero as defined in the system instructions. Colors must suit the topic mood.\n' +
     '\n' +
     'Write only for these platforms: ' +
     payload.platforms.join(',') +

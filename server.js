@@ -14,6 +14,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { createClient } = require('@supabase/supabase-js');
 const contentGenLib = require('./content-generate-lib');
+const contentImageBuilder = require('./content-image-builder');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -860,18 +861,61 @@ app.post('/api/content-generate', function (req, res) {
             return {
               platform: p.platform,
               content: p.content,
-              hashtags: p.hashtags,
+              hashtags: Array.isArray(p.hashtags) ? p.hashtags : [],
               callToAction: p.callToAction,
               postType: p.postType,
               characterCount: p.characterCount || (p.content && p.content.length) || 0
             };
           });
-          return supabaseAdmin.from('content_generation_log').insert({ user_id: user.id }).then(function (ins) {
-            if (ins.error) {
-              console.error('[content-generate] log insert failed:', ins.error.message);
-            }
-            res.json({ posts: normalised });
-          });
+          var hctiConfigured =
+            (process.env.HCTI_USER_ID || '').trim() &&
+            (process.env.HCTI_API_KEY || '').trim();
+          var brandHandle = contentImageBuilder.suggestBrandHandle(businessName);
+
+          function finishContentResponse(posts) {
+            return supabaseAdmin.from('content_generation_log').insert({ user_id: user.id }).then(function (ins) {
+              if (ins.error) {
+                console.error('[content-generate] log insert failed:', ins.error.message);
+              }
+              res.json({ posts: posts });
+            });
+          }
+
+          if (!hctiConfigured) {
+            normalised.forEach(function (post) {
+              post.imageUrl = null;
+              post.imageBase64 = null;
+            });
+            return finishContentResponse(normalised);
+          }
+
+          return Promise.all(
+            normalised.map(function (post, i) {
+              return Promise.resolve()
+                .then(function () {
+                  var design = contentImageBuilder.normalizeDesign(parsed[i], contentTopic);
+                  var html = contentImageBuilder.buildPostHtml(
+                    design,
+                    businessName,
+                    brandHandle,
+                    1080,
+                    1080
+                  );
+                  return contentImageBuilder.renderImageViaHCTI(html);
+                })
+                .then(function (img) {
+                  post.imageUrl = img.url;
+                  post.imageBase64 = img.base64;
+                  return post;
+                })
+                .catch(function (err) {
+                  console.error('[content-generate] HCTI failed for', post.platform, err.message);
+                  post.imageUrl = null;
+                  post.imageBase64 = null;
+                  return post;
+                });
+            })
+          ).then(finishContentResponse);
         })
         .catch(function (err) {
           if (!res.headersSent) res.status(502).json({ error: err && err.message ? err.message : 'Content generation failed' });
