@@ -85,16 +85,22 @@ var SYSTEM_PROMPT =
   '\n' +
   '7. **Self-review** — Does this sound like a real person wrote it? Would I stop scrolling for this? Is the CTA natural? Is it within the character limit?\n' +
   '\n' +
-  '# BRANDED VISUAL CARD (REQUIRED FOR EVERY POST)\n' +
-  'Each post is rendered as HTML and converted to a 1080×1080 PNG (HCTI), then optionally polished with OpenAI. You MUST include these design fields on every object — they drive the layout and the enhancement context.\n' +
-  '- **layout_style**: `listicle` for tips/steps; `quote` for insights; `split` for comparisons; `hero` for announcements.\n' +
-  '- **accent_color**, **bg_gradient_from**, **bg_gradient_to**: valid 6-digit hex. Match accent to mood (warm/sales, cool/trust, green/growth, purple/innovation).\n' +
-  '- **headline**: Card Title Case hook, 3–7 words (exact text will appear on the graphic).\n' +
-  '- **subheadline**: 10–22 words for the card (exact text on the graphic).\n' +
-  '- **bullets**: At most 3 strings, ~6 words each — used in listicle/split.\n' +
-  '- **cta_button**: 2–4 words for the on-image button (e.g. Learn More); `callToAction` is the post CTA.\n' +
-  '- **category_tag**: 1–2 words ALL CAPS.\n' +
-  '- **emoji**: One emoji for the card header.\n' +
+  '# BRANDED VISUAL CARD (REQUIRED — DARK EDITORIAL LAYOUT)\n' +
+  'Each post is rendered as HTML → 1080×1080 PNG (local Puppeteer). You MUST include every visual field below on every object.\n' +
+  '- **layout_style**: `three_col` when the topic has 3 distinct tips, reasons, steps, or pillars (use **columns**). Use `listicle` for numbered tips without full column copy. `quote` for a single insight. `split` for comparison chips. `hero` for one hero message + subhead only.\n' +
+  '- **headline**: Full headline as it appears on the card (Title Case / sentence case as you intend).\n' +
+  '- **headline_crossout**: Exactly ONE word from **headline** to show with **strikethrough** (editorial contrast).\n' +
+  '- **headline_highlight**: Exactly ONE word from **headline** to emphasize in **italic serif + accent color** (must not be the same token as crossout unless unavoidable — prefer different words).\n' +
+  '- **subheadline**: Supporting line under the headline (card only).\n' +
+  '- **columns**: Required when layout_style is `three_col`: exactly **3** objects `{ "num": "01", "label": "OPERATE", "title": "…", "desc": "…" }` — small caps label, bold title, 1–2 line description.\n' +
+  '- **bullets**: Up to 3 short strings for `listicle` / `split`.\n' +
+  '- **cta** or **cta_button**: 2–5 words on the primary button; must match campaign intent.\n' +
+  '- **accent_color**: Hex (e.g. neon lime `#84cc16`, electric blue, coral).\n' +
+  '- **bg_color**: Near-black hex, default `#0a0a0a`.\n' +
+  '- **category_tag**: ALL CAPS editorial pill (e.g. `A FIELD GUIDE TO AI`).\n' +
+  '- **meta_left**, **meta_right**: Top bar micro type (e.g. `TECH TIPS · FIELD NOTES`, `READ 2 MIN`).\n' +
+  '- **vol_label**: Optional small rotated label on right edge (e.g. `VOL. 04 · THE AI ISSUE · 2026`). Empty string if unused.\n' +
+  '- **emoji**: One emoji or empty string.\n' +
   '\n' +
   '# OUTPUT FORMAT\n' +
   'Return a JSON array only. No explanation, no markdown, no code fences. Each object must contain exactly these fields:\n' +
@@ -106,18 +112,28 @@ var SYSTEM_PROMPT =
   '    "callToAction": "...",\n' +
   '    "postType": "text",\n' +
   '    "characterCount": 820,\n' +
-  '    "headline": "Three To Seven Words Here",\n' +
-  '    "subheadline": "Ten to twenty-two words for the branded card.",\n' +
-  '    "bullets": ["Short chip one", "Short chip two", "Optional third"],\n' +
-  '    "cta_button": "Learn More",\n' +
-  '    "accent_color": "#7C3AED",\n' +
-  '    "bg_gradient_from": "#0F172A",\n' +
-  '    "bg_gradient_to": "#1E1B4B",\n' +
-  '    "layout_style": "hero",\n' +
-  '    "category_tag": "INSIGHTS",\n' +
-  '    "emoji": "✨"\n' +
+  '    "headline": "Stop guessing. Start compounding with AI.",\n' +
+  '    "headline_crossout": "guessing",\n' +
+  '    "headline_highlight": "compounding",\n' +
+  '    "subheadline": "Ten to twenty-two words supporting the headline on the card.",\n' +
+  '    "bullets": ["Optional chip one", "Chip two", "Chip three"],\n' +
+  '    "columns": [\n' +
+  '      { "num": "01", "label": "OPERATE", "title": "Short bold title", "desc": "One or two lines of body." },\n' +
+  '      { "num": "02", "label": "SERVE", "title": "Short bold title", "desc": "One or two lines of body." },\n' +
+  '      { "num": "03", "label": "DECIDE", "title": "Short bold title", "desc": "One or two lines of body." }\n' +
+  '    ],\n' +
+  '    "cta_button": "Read the field guide",\n' +
+  '    "accent_color": "#84cc16",\n' +
+  '    "bg_color": "#0a0a0a",\n' +
+  '    "layout_style": "three_col",\n' +
+  '    "category_tag": "A FIELD GUIDE TO AI",\n' +
+  '    "meta_left": "TECH TIPS · FIELD NOTES",\n' +
+  '    "meta_right": "READ 2 MIN",\n' +
+  '    "vol_label": "VOL. 04 · THE AI ISSUE · 2026",\n' +
+  '    "emoji": ""\n' +
   '  }\n' +
   ']\n' +
+  'When layout_style is not three_col, still output a valid columns array (use three placeholder objects or repeat minimal stubs — the renderer ignores them unless layout is three_col).\n' +
   'Return the JSON array and nothing else.\n' +
   '\n' +
   '# PLATFORM-SPECIFIC RULES\n' +
@@ -166,7 +182,7 @@ var SYSTEM_PROMPT =
   '✅ Character count is within the platform\'s defined range\n' +
   '✅ Hashtags are niche-relevant, not generic filler\n' +
   '✅ CTA matches the stated content goal\n' +
-  '✅ Every post includes full visual card fields (headline through emoji) for the graphic pipeline\n' +
+  '✅ Every post includes headline_crossout, headline_highlight, bg_color, meta fields, and columns array; three_col layouts have 3 real column rows\n' +
   '✅ JSON is valid and complete\n' +
   '\n' +
   '# CONSTRAINTS\n' +
@@ -238,18 +254,27 @@ function buildContentUserPrompt(payload) {
     '  "callToAction": "the exact CTA line used in the post",\n' +
     '  "postType": "text | carousel | image | video_script",\n' +
     '  "characterCount": 0,\n' +
-    '  "headline": "3-7 words Title Case for the card",\n' +
-    '  "subheadline": "10-22 words on the card",\n' +
-    '  "bullets": ["max 3 items", "max ~6 words each", "action-oriented"],\n' +
-    '  "cta_button": "2-4 words",\n' +
+    '  "headline": "full on-card headline",\n' +
+    '  "headline_crossout": "one word from headline",\n' +
+    '  "headline_highlight": "one word from headline",\n' +
+    '  "subheadline": "10-22 words for the card",\n' +
+    '  "bullets": ["up to 3 strings"],\n' +
+    '  "columns": [\n' +
+    '    { "num": "01", "label": "LABEL", "title": "Title", "desc": "Description." },\n' +
+    '    { "num": "02", "label": "LABEL", "title": "Title", "desc": "Description." },\n' +
+    '    { "num": "03", "label": "LABEL", "title": "Title", "desc": "Description." }\n' +
+    '  ],\n' +
+    '  "cta_button": "button label",\n' +
     '  "accent_color": "#RRGGBB",\n' +
-    '  "bg_gradient_from": "#RRGGBB dark",\n' +
-    '  "bg_gradient_to": "#RRGGBB dark",\n' +
-    '  "layout_style": "hero | split | quote | listicle",\n' +
-    '  "category_tag": "ALL CAPS",\n' +
-    '  "emoji": "one emoji"\n' +
+    '  "bg_color": "#0a0a0a",\n' +
+    '  "layout_style": "hero | split | quote | listicle | three_col",\n' +
+    '  "category_tag": "ALL CAPS PILL",\n' +
+    '  "meta_left": "SMALL CAPS LEFT",\n' +
+    '  "meta_right": "SMALL CAPS RIGHT",\n' +
+    '  "vol_label": "optional vertical label or empty string",\n' +
+    '  "emoji": "one emoji or empty string"\n' +
     '}\n' +
-    'Per platform, vary headline/subheadline energy (LinkedIn = refined; Instagram = bolder) while keeping hex colors tasteful.\n' +
+    'Use layout_style "three_col" with three meaningful columns when the post presents 3 tips, reasons, or steps. headline_crossout and headline_highlight must each match one word in headline (after normalizing punctuation). Fill meta_left and meta_right with editorial microcopy appropriate to the platform.\n' +
     '\n' +
     'Write only for these platforms: ' +
     payload.platforms.join(',') +

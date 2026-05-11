@@ -15,7 +15,6 @@ const cookieParser = require('cookie-parser');
 const { createClient } = require('@supabase/supabase-js');
 const contentGenLib = require('./content-generate-lib');
 const contentImageBuilder = require('./content-image-builder');
-const contentImageGen = require('./content-image-generator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -768,6 +767,60 @@ app.get('/api/content-post-limit', function (req, res) {
   });
 });
 
+// GET /test-card — sample editorial card PNG (local render; no auth)
+app.get('/test-card', function (req, res) {
+  var raw = {
+    headline: 'Stop guessing. Start compounding with AI.',
+    headline_crossout: 'guessing',
+    headline_highlight: 'compounding',
+    subheadline:
+      'Turn fragile experiments into systems that compound — so every week your team ships with less thrash.',
+    layout_style: 'three_col',
+    columns: [
+      {
+        num: '01',
+        label: 'OPERATE',
+        title: 'Automate the boring 80%',
+        desc: 'Recover hours each week by handing repeatable workflows to agents.'
+      },
+      {
+        num: '02',
+        label: 'SERVE',
+        title: 'Personalize at real scale',
+        desc: 'Treat every customer like your first — context-aware, instant.'
+      },
+      {
+        num: '03',
+        label: 'DECIDE',
+        title: 'See the signal, not noise',
+        desc: 'Surface the metric that moves the needle before your competitor does.'
+      }
+    ],
+    accent_color: '#84cc16',
+    bg_color: '#0a0a0a',
+    category_tag: 'A FIELD GUIDE TO AI',
+    cta: 'Read the field guide',
+    meta_left: 'TECH TIPS · FIELD NOTES',
+    meta_right: 'READ 2 MIN',
+    vol_label: '',
+    bullets: [],
+    emoji: ''
+  };
+  var d = contentImageBuilder.normalizeDesign(raw, '');
+  var html = contentImageBuilder.buildPostHtml(d, 'Aztec Intel', '@aztecintel', 1080, 1080);
+  contentImageBuilder
+    .renderImageLocally(html)
+    .then(function (r) {
+      var b64 = (r.base64 || '').replace(/^data:image\/png;base64,/, '');
+      res.setHeader('Content-Type', 'image/png');
+      res.send(Buffer.from(b64, 'base64'));
+    })
+    .catch(function (e) {
+      console.error('[test-card]', e);
+      res.status(500).type('text').send(e.message || 'Render failed');
+    });
+});
+
 // POST /api/content-generate — OpenAI (server-side); enforces daily cap; logs one row per successful run
 app.post('/api/content-generate', function (req, res) {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
@@ -878,19 +931,7 @@ app.post('/api/content-generate', function (req, res) {
             });
           }
 
-          var hctiConfigured =
-            (process.env.HCTI_USER_ID || '').trim() &&
-            (process.env.HCTI_API_KEY || '').trim();
-          var openaiConfigured = (process.env.OPENAI_API_KEY || '').trim();
           var brandHandle = contentImageBuilder.suggestBrandHandle(businessName);
-
-          if (!hctiConfigured) {
-            normalised.forEach(function (post) {
-              post.imageUrl = null;
-              post.imageBase64 = null;
-            });
-            return finishContentResponse(normalised);
-          }
 
           return Promise.all(
             normalised.map(function (post, i) {
@@ -904,39 +945,15 @@ app.post('/api/content-generate', function (req, res) {
                     1080,
                     1080
                   );
-                  return contentImageBuilder.renderImageViaHCTI(html).then(function (hcti) {
-                    return { design: design, hcti: hcti };
-                  });
+                  return contentImageBuilder.renderImageViaHCTI(html);
                 })
-                .then(function (bundle) {
-                  var hcti = bundle.hcti;
-                  var design = bundle.design;
-                  var ctx = {
-                    platform: post.platform,
-                    businessName: businessName,
-                    contentTopic: contentTopic,
-                    headline: design.headline,
-                    subheadline: design.subheadline,
-                    accent_color: design.accent_color
-                  };
-                  if (!openaiConfigured) {
-                    post.imageBase64 = hcti.base64;
-                    post.imageUrl = hcti.url;
-                    return post;
-                  }
-                  return contentImageGen.enhanceImageFromDataUri(hcti.base64, ctx).then(function (enh) {
-                    if (enh && enh.base64) {
-                      post.imageBase64 = enh.base64;
-                      post.imageUrl = null;
-                    } else {
-                      post.imageBase64 = hcti.base64;
-                      post.imageUrl = hcti.url;
-                    }
-                    return post;
-                  });
+                .then(function (result) {
+                  post.imageBase64 = result.base64;
+                  post.imageUrl = result.url;
+                  return post;
                 })
                 .catch(function (err) {
-                  console.error('[content-generate] image pipeline failed for', post.platform, err.message);
+                  console.error('[content-generate] image render failed for', post.platform, err.message);
                   post.imageUrl = null;
                   post.imageBase64 = null;
                   return post;
