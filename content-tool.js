@@ -226,9 +226,9 @@
       var platLabel = PLATFORM_LABELS[p.platform] || p.platform;
       var imageBlock = '';
       if (p.imageBase64 || p.imageUrl) {
-        var imgSrc =
-          p.imageUrl && /^https?:/gi.test(p.imageUrl) ? p.imageUrl : p.imageBase64 || '';
-        var dlHref = p.imageUrl && /^https?:/i.test(p.imageUrl) ? p.imageUrl : p.imageBase64 || '';
+        var preferUrl = p.imageUrl && isHttpOrHttpsUrl(p.imageUrl);
+        var imgSrc = preferUrl ? String(p.imageUrl).trim() : p.imageBase64 || '';
+        var dlHref = preferUrl ? String(p.imageUrl).trim() : p.imageBase64 || '';
         imageBlock =
           '<div class="content-tool-image-wrapper">' +
           '<img src="' +
@@ -303,6 +303,11 @@
         btn.textContent = prev;
       }, 2000);
     });
+  }
+
+  function isHttpOrHttpsUrl(u) {
+    u = String(u || '').trim();
+    return u.indexOf('https://') === 0 || u.indexOf('http://') === 0;
   }
 
   function escapeHtml(str) {
