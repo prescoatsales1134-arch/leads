@@ -17,5 +17,8 @@
   },
   "devDependencies": {
     "serve": "^14.2.5"
+  },
+  "overrides": {
+    "puppeteer": "^24.15.0"
   }
 }
