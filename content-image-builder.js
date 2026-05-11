@@ -74,7 +74,7 @@ function normalizeDesign(aiPost, fallbackHeadline) {
     columns: columns,
     cta: String(d.cta || d.cta_button || 'Learn More').slice(0, 80),
     accent_color: sanitizeHexColor(d.accent_color, '#84cc16'),
-    bg_color: sanitizeHexColor(d.bg_color, '#0a0a0a'),
+    bg_color: sanitizeHexColor(d.bg_color, '#0d0d0d'),
     layout_style: layout,
     category_tag: String(d.category_tag || 'INSIGHTS')
       .slice(0, 80)
@@ -279,8 +279,8 @@ function buildPostHtml(design, brandName, brandHandle) {
     '  position: absolute;\n' +
     '  inset: 0;\n' +
     '  background-image:\n' +
-    '    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),\n' +
-    '    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);\n' +
+    '    linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),\n' +
+    '    linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);\n' +
     '  background-size: 27px 27px;\n' +
     '  pointer-events: none;\n' +
     '  z-index: 0;\n' +
@@ -294,9 +294,9 @@ function buildPostHtml(design, brandName, brandHandle) {
     '  height: 280px;\n' +
     '  background: radial-gradient(circle, ' +
     ac +
-    '55 0%, ' +
+    '77 0%, ' +
     ac +
-    '22 40%, transparent 70%);\n' +
+    '33 40%, transparent 68%);\n' +
     '  pointer-events: none;\n' +
     '  z-index: 0;\n' +
     '}\n' +
@@ -349,13 +349,13 @@ function buildPostHtml(design, brandName, brandHandle) {
     '  display: flex;\n' +
     '  flex-direction: column;\n' +
     '  height: 100%;\n' +
-    '  padding: 26px 30px 24px;\n' +
+    '  padding: 28px 32px 28px;\n' +
     '}\n' +
     '.top-bar {\n' +
     '  display: flex;\n' +
     '  align-items: flex-start;\n' +
     '  justify-content: space-between;\n' +
-    '  margin-bottom: 14px;\n' +
+    '  margin-bottom: 16px;\n' +
     '}\n' +
     '.meta-left {\n' +
     '  display: flex;\n' +
@@ -364,7 +364,7 @@ function buildPostHtml(design, brandName, brandHandle) {
     '  font-size: 6px;\n' +
     '  font-weight: 600;\n' +
     '  letter-spacing: 0.14em;\n' +
-    '  color: rgba(255,255,255,0.38);\n' +
+    '  color: rgba(255,255,255,0.52);\n' +
     '  text-transform: uppercase;\n' +
     "}\n" +
     ".meta-num {\n  font-family: 'Space Grotesk', sans-serif;\n  font-size: 8px;\n  font-weight: 700;\n  color: " +
@@ -381,7 +381,7 @@ function buildPostHtml(design, brandName, brandHandle) {
     '  font-size: 5.5px;\n' +
     '  font-weight: 500;\n' +
     '  letter-spacing: 0.08em;\n' +
-    '  color: rgba(255,255,255,0.35);\n' +
+    '  color: rgba(255,255,255,0.48);\n' +
     '  text-transform: uppercase;\n' +
     '  line-height: 1.7;\n' +
     '}\n' +
@@ -408,7 +408,7 @@ function buildPostHtml(design, brandName, brandHandle) {
     '  color: ' +
     ac +
     ';\n' +
-    '  margin-bottom: 14px;\n' +
+    '  margin-bottom: 18px;\n' +
     '  width: fit-content;\n' +
     '}\n' +
     '.tag .dot {\n' +
@@ -425,13 +425,13 @@ function buildPostHtml(design, brandName, brandHandle) {
     "  font-family: 'Bebas Neue', 'Space Grotesk', sans-serif;\n" +
     '  font-size: 54px;\n' +
     '  font-weight: 400;\n' +
-    '  line-height: 0.96;\n' +
+    '  line-height: 1.0;\n' +
     '  letter-spacing: 0.01em;\n' +
     '  color: #fff;\n' +
-    '  margin-bottom: 12px;\n' +
+    '  margin-bottom: 14px;\n' +
     '}\n' +
     '.hl-cross {\n' +
-    '  color: rgba(255,255,255,0.38);\n' +
+    '  color: rgba(255,255,255,0.42);\n' +
     '  text-decoration: line-through;\n' +
     '  text-decoration-color: rgba(255,255,255,0.28);\n' +
     '  text-decoration-thickness: 1.5px;\n' +
@@ -446,57 +446,59 @@ function buildPostHtml(design, brandName, brandHandle) {
     '  letter-spacing: -0.01em;\n' +
     '}\n' +
     '.sub {\n' +
-    '  font-size: 11px;\n' +
+    '  font-size: 12px;\n' +
     '  font-weight: 400;\n' +
-    '  line-height: 1.5;\n' +
-    '  color: rgba(255,255,255,0.62);\n' +
+    '  line-height: 1.55;\n' +
+    '  color: rgba(255,255,255,0.78);\n' +
     '  max-width: 85%;\n' +
-    '  margin-bottom: 16px;\n' +
+    '  margin-bottom: 0px;\n' +
     '}\n' +
     '.three-col {\n' +
     '  display: flex;\n' +
     '  align-items: flex-start;\n' +
     '  border-top: 1px solid rgba(255,255,255,0.12);\n' +
-    '  padding-top: 12px;\n' +
-    '  margin-bottom: 12px;\n' +
+    '  padding-top: 14px;\n' +
+    '  margin-top: auto;\n' +
+    '  margin-bottom: 0;\n' +
     '  gap: 0;\n' +
     '}\n' +
-    '.col { flex: 1; padding-right: 12px; }\n' +
+    '.col { flex: 1; padding-right: 14px; }\n' +
     '.col:last-child { padding-right: 0; }\n' +
     '.col-divider {\n' +
     '  width: 1px;\n' +
     '  background: rgba(255,255,255,0.12);\n' +
     '  align-self: stretch;\n' +
-    '  margin: 0 12px;\n' +
+    '  margin: 0 14px;\n' +
     '  flex-shrink: 0;\n' +
     '}\n' +
     '.col-header {\n' +
     '  display: flex;\n' +
     '  align-items: center;\n' +
     '  gap: 5px;\n' +
-    '  margin-bottom: 5px;\n' +
+    '  margin-bottom: 7px;\n' +
     '}\n' +
-    ".col-num {\n  font-family: 'Space Grotesk', sans-serif;\n  font-size: 10px;\n  font-weight: 700;\n  color: " +
+    ".col-num {\n  font-family: 'Space Grotesk', sans-serif;\n  font-size: 11px;\n  font-weight: 700;\n  color: " +
     ac +
     ';\n  font-style: italic;\n}\n' +
     '.col-label {\n' +
     '  font-size: 5.5px;\n' +
     '  font-weight: 600;\n' +
     '  letter-spacing: 0.14em;\n' +
-    '  color: rgba(255,255,255,0.3);\n' +
+    '  color: rgba(255,255,255,0.45);\n' +
     '  text-transform: uppercase;\n' +
     '}\n' +
     '.col-title {\n' +
-    '  font-size: 10px;\n' +
+    '  font-size: 11px;\n' +
     '  font-weight: 700;\n' +
-    '  color: #fff;\n' +
+    '  color: #ffffff;\n' +
+    '  text-shadow: none;\n' +
     '  line-height: 1.2;\n' +
-    '  margin-bottom: 5px;\n' +
+    '  margin-bottom: 6px;\n' +
     '}\n' +
     '.col-desc {\n' +
-    '  font-size: 6.5px;\n' +
+    '  font-size: 7px;\n' +
     '  font-weight: 400;\n' +
-    '  color: rgba(255,255,255,0.5);\n' +
+    '  color: rgba(255,255,255,0.65);\n' +
     '  line-height: 1.45;\n' +
     '}\n' +
     '.bullets { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }\n' +
@@ -534,7 +536,7 @@ function buildPostHtml(design, brandName, brandHandle) {
     '  display: flex;\n' +
     '  align-items: center;\n' +
     '  justify-content: space-between;\n' +
-    '  padding-top: 10px;\n' +
+    '  padding-top: 12px;\n' +
     '  border-top: 1px solid rgba(255,255,255,0.08);\n' +
     '  margin-top: auto;\n' +
     '}\n' +
@@ -549,23 +551,23 @@ function buildPostHtml(design, brandName, brandHandle) {
     '  flex-shrink: 0;\n' +
     '}\n' +
     '.brand-text { display: flex; flex-direction: column; }\n' +
-    '.brand-name { font-weight: 700; font-size: 11px; color: #fff; }\n' +
+    '.brand-name { font-weight: 700; font-size: 12px; color: #ffffff; }\n' +
     '.brand-tagline {\n' +
-    '  font-size: 5.5px; font-weight: 500;\n' +
+    '  font-size: 6px; font-weight: 500;\n' +
     '  letter-spacing: 0.1em;\n' +
     '  color: rgba(255,255,255,0.35);\n' +
     '  text-transform: uppercase;\n' +
     '}\n' +
     '.cta {\n' +
     '  display: inline-flex; align-items: center; gap: 6px;\n' +
-    '  padding: 7px 14px;\n' +
+    '  padding: 8px 16px;\n' +
     '  background: ' +
     ac +
     ';\n' +
     '  color: #000000;\n' +
     '  border-radius: 999px;\n' +
     "  font-family: 'Space Grotesk', sans-serif;\n" +
-    '  font-weight: 700; font-size: 8px;\n' +
+    '  font-weight: 700; font-size: 8.5px;\n' +
     '  white-space: nowrap;\n' +
     '}\n' +
     '.cta-arrow {\n' +
