@@ -15,6 +15,8 @@ const cookieParser = require('cookie-parser');
 const { createClient } = require('@supabase/supabase-js');
 const contentGenLib = require('./content-generate-lib');
 const contentImageBuilder = require('./content-image-builder');
+const contentImageGenerator = require('./content-image-generator');
+const { uploadImageToSupabase } = require('./content-image-storage');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -767,58 +769,72 @@ app.get('/api/content-post-limit', function (req, res) {
   });
 });
 
-// GET /test-card — sample editorial card PNG (local render; no auth)
-app.get('/test-card', function (req, res) {
-  var raw = {
-    headline: 'Stop guessing. Start compounding with AI.',
-    headline_crossout: 'guessing',
-    headline_highlight: 'compounding',
-    subheadline:
-      'Turn fragile experiments into systems that compound — so every week your team ships with less thrash.',
-    layout_style: 'three_col',
-    columns: [
+// GET /test-card — full pipeline sample PNG (HCTI + OpenAI enhance; no auth)
+app.get('/test-card', async function (req, res) {
+  try {
+    var design = contentImageBuilder.normalizeDesign(
       {
-        num: '01',
-        label: 'OPERATE',
-        title: 'Automate the boring 80%',
-        desc: 'Recover hours each week by handing repeatable workflows to agents.'
+        headline: 'Stop guessing. Start compounding with AI.',
+        headline_crossout: 'guessing',
+        headline_highlight: 'compounding',
+        subheadline:
+          'Three small shifts that turn artificial intelligence from a novelty into measurable leverage — without rebuilding your stack or your team.',
+        layout_style: 'three_col',
+        columns: [
+          {
+            num: '01',
+            label: 'OPERATE',
+            title: 'Automate the boring 80%',
+            desc:
+              "Recover hours each week by handing repeatable workflows to agents that don't sleep."
+          },
+          {
+            num: '02',
+            label: 'SERVE',
+            title: 'Personalize at real scale',
+            desc:
+              'Treat every customer like your first — context-aware, instant, never copy-pasted.'
+          },
+          {
+            num: '03',
+            label: 'DECIDE',
+            title: 'See the signal, not noise',
+            desc: 'Surface the metric that moves the needle before your competitor does.'
+          }
+        ],
+        accent_color: '#84cc16',
+        bg_color: '#0a0a0a',
+        category_tag: 'A FIELD GUIDE TO AI',
+        cta: 'Read the field guide',
+        meta_left: 'TECH TIPS · FIELD NOTES',
+        meta_right: 'READ 2 MIN\nFILED 10·05·26',
+        vol_label: 'VOL. 04 · THE AI ISSUE · 2026'
       },
-      {
-        num: '02',
-        label: 'SERVE',
-        title: 'Personalize at real scale',
-        desc: 'Treat every customer like your first — context-aware, instant.'
-      },
-      {
-        num: '03',
-        label: 'DECIDE',
-        title: 'See the signal, not noise',
-        desc: 'Surface the metric that moves the needle before your competitor does.'
-      }
-    ],
-    accent_color: '#84cc16',
-    bg_color: '#0a0a0a',
-    category_tag: 'A FIELD GUIDE TO AI',
-    cta: 'Read the field guide',
-    meta_left: 'TECH TIPS · FIELD NOTES',
-    meta_right: 'READ 2 MIN',
-    vol_label: '',
-    bullets: [],
-    emoji: ''
-  };
-  var d = contentImageBuilder.normalizeDesign(raw, '');
-  var html = contentImageBuilder.buildPostHtml(d, 'Aztec Intel', '@aztecintel', 1080, 1080);
-  contentImageBuilder
-    .renderImageLocally(html)
-    .then(function (r) {
-      var b64 = (r.base64 || '').replace(/^data:image\/png;base64,/, '');
-      res.setHeader('Content-Type', 'image/png');
-      res.send(Buffer.from(b64, 'base64'));
-    })
-    .catch(function (e) {
-      console.error('[test-card]', e);
-      res.status(500).type('text').send(e.message || 'Render failed');
-    });
+      ''
+    );
+
+    var html = contentImageBuilder.buildPostHtml(design, 'Aztec Intel', '@aztecintel');
+    var hctiResult = await contentImageBuilder.renderImageViaHCTI(html);
+
+    var ctx = {
+      platform: 'linkedin',
+      businessName: 'Aztec Intel',
+      contentTopic: 'AI automation for business',
+      headline: 'Stop guessing. Start compounding with AI.',
+      subheadline:
+        'Three small shifts that turn artificial intelligence from a novelty into measurable leverage.',
+      accent_color: '#84cc16'
+    };
+
+    var enhanced = await contentImageGenerator.enhanceImageFromDataUri(hctiResult.base64, ctx);
+    var finalBase64 = enhanced && enhanced.base64 ? enhanced.base64 : hctiResult.base64;
+    var imgBuffer = Buffer.from(finalBase64.replace(/^data:image\/png;base64,/, ''), 'base64');
+    res.set('Content-Type', 'image/png');
+    res.send(imgBuffer);
+  } catch (err) {
+    console.error('/test-card error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /api/content-generate — OpenAI (server-side); enforces daily cap; logs one row per successful run
@@ -938,19 +954,46 @@ app.post('/api/content-generate', function (req, res) {
               return Promise.resolve()
                 .then(function () {
                   var design = contentImageBuilder.normalizeDesign(parsed[i], contentTopic);
-                  var html = contentImageBuilder.buildPostHtml(
-                    design,
-                    businessName,
-                    brandHandle,
-                    1080,
-                    1080
-                  );
-                  return contentImageBuilder.renderImageViaHCTI(html);
-                })
-                .then(function (result) {
-                  post.imageBase64 = result.base64;
-                  post.imageUrl = result.url;
-                  return post;
+                  var html = contentImageBuilder.buildPostHtml(design, businessName, brandHandle);
+                  return contentImageBuilder.renderImageViaHCTI(html).then(function (hctiResult) {
+                    var ctx = {
+                      platform: post.platform,
+                      businessName: businessName,
+                      contentTopic: contentTopic,
+                      headline: design.headline,
+                      subheadline: design.subheadline,
+                      accent_color: design.accent_color
+                    };
+                    return contentImageGenerator
+                      .enhanceImageFromDataUri(hctiResult.base64, ctx)
+                      .then(function (enhanced) {
+                        var finalB64 =
+                          enhanced && enhanced.base64 ? enhanced.base64 : hctiResult.base64;
+                        var postId = user.id + '_' + post.platform + '_' + i;
+                        return uploadImageToSupabase(finalB64, postId).then(function (permanentUrl) {
+                          var finalImageUrl = permanentUrl || hctiResult.url;
+                          post.imageBase64 = finalB64;
+                          post.imageUrl = finalImageUrl;
+                          return supabaseAdmin
+                            .from('content_posts')
+                            .insert({
+                              user_id: user.id,
+                              platform: post.platform,
+                              headline: design.headline,
+                              image_url: finalImageUrl
+                            })
+                            .then(function (ins) {
+                              if (ins.error) {
+                                console.error(
+                                  '[content-generate] content_posts insert failed:',
+                                  ins.error.message
+                                );
+                              }
+                              return post;
+                            });
+                        });
+                      });
+                  });
                 })
                 .catch(function (err) {
                   console.error('[content-generate] image render failed for', post.platform, err.message);

@@ -86,21 +86,22 @@ var SYSTEM_PROMPT =
   '7. **Self-review** — Does this sound like a real person wrote it? Would I stop scrolling for this? Is the CTA natural? Is it within the character limit?\n' +
   '\n' +
   '# BRANDED VISUAL CARD (REQUIRED — DARK EDITORIAL LAYOUT)\n' +
-  'Each post is rendered as HTML → 1080×1080 PNG (local Puppeteer). You MUST include every visual field below on every object.\n' +
-  '- **layout_style**: `three_col` when the topic has 3 distinct tips, reasons, steps, or pillars (use **columns**). Use `listicle` for numbered tips without full column copy. `quote` for a single insight. `split` for comparison chips. `hero` for one hero message + subhead only.\n' +
-  '- **headline**: Full headline as it appears on the card (Title Case / sentence case as you intend).\n' +
-  '- **headline_crossout**: Exactly ONE word from **headline** to show with **strikethrough** (editorial contrast).\n' +
-  '- **headline_highlight**: Exactly ONE word from **headline** to emphasize in **italic serif + accent color** (must not be the same token as crossout unless unavoidable — prefer different words).\n' +
+  'Each post is rendered as HTML → HCTI PNG (540×540 viewport, 2× scale → 1080 PNG), then a subtle OpenAI image "print finish". You MUST include every visual field below on every object.\n' +
+  '- **headline**: Full headline as on the card.\n' +
+  '- **headline_crossout**: one exact word from the headline — the word being negated, replaced, or contrasted. Must be a word that already exists verbatim in the headline field.\n' +
+  '- **headline_highlight**: one exact key concept word from the headline — the most important transformative word. Must exist verbatim in the headline field. Will render as large italic serif in accent color.\n' +
+  '- **layout_style**: use **three_col** when content has exactly 3 tips, reasons, or steps. Use **listicle** for numbered lists. Use **hero** for single announcements. Use **quote** for insight/wisdom posts. Use **split** for comparison chips.\n' +
   '- **subheadline**: Supporting line under the headline (card only).\n' +
-  '- **columns**: Required when layout_style is `three_col`: exactly **3** objects `{ "num": "01", "label": "OPERATE", "title": "…", "desc": "…" }` — small caps label, bold title, 1–2 line description.\n' +
-  '- **bullets**: Up to 3 short strings for `listicle` / `split`.\n' +
-  '- **cta** or **cta_button**: 2–5 words on the primary button; must match campaign intent.\n' +
-  '- **accent_color**: Hex (e.g. neon lime `#84cc16`, electric blue, coral).\n' +
-  '- **bg_color**: Near-black hex, default `#0a0a0a`.\n' +
-  '- **category_tag**: ALL CAPS editorial pill (e.g. `A FIELD GUIDE TO AI`).\n' +
-  '- **meta_left**, **meta_right**: Top bar micro type (e.g. `TECH TIPS · FIELD NOTES`, `READ 2 MIN`).\n' +
-  '- **vol_label**: Optional small rotated label on right edge (e.g. `VOL. 04 · THE AI ISSUE · 2026`). Empty string if unused.\n' +
-  '- **emoji**: One emoji or empty string.\n' +
+  '- **columns**: when **layout_style** is **three_col**, exactly 3 objects `{ "num": "01", "label": "ONE ACTION WORD", "title": "Bold title max 5 words", "desc": "One sentence, max 15 words." }`.\n' +
+  '- **bullets**: up to 3 short strings for **listicle** / **split**.\n' +
+  '- **cta** or **cta_button**: button label (must match footer CTA).\n' +
+  '- **accent_color**: **#84cc16** for tech/AI/growth | **#f59e0b** for food/hospitality/warm | **#22c55e** for health/sustainability | **#38bdf8** for corporate/finance | **#a855f7** for luxury/creative.\n' +
+  '- **bg_color**: default **#0a0a0a**.\n' +
+  '- **category_tag**: ALL CAPS editorial pill.\n' +
+  '- **meta_left**: e.g. **CATEGORY · SERIES NAME**.\n' +
+  '- **meta_right**: e.g. **READ X MIN**; you may add a second line with **\\n** for **FILED DD·MM·YY**.\n' +
+  '- **vol_label**: e.g. **VOL. 01 · TOPIC · YEAR**, or empty string.\n' +
+  '- **emoji**: one emoji or empty string.\n' +
   '\n' +
   '# OUTPUT FORMAT\n' +
   'Return a JSON array only. No explanation, no markdown, no code fences. Each object must contain exactly these fields:\n' +
@@ -118,17 +119,17 @@ var SYSTEM_PROMPT =
   '    "subheadline": "Ten to twenty-two words supporting the headline on the card.",\n' +
   '    "bullets": ["Optional chip one", "Chip two", "Chip three"],\n' +
   '    "columns": [\n' +
-  '      { "num": "01", "label": "OPERATE", "title": "Short bold title", "desc": "One or two lines of body." },\n' +
-  '      { "num": "02", "label": "SERVE", "title": "Short bold title", "desc": "One or two lines of body." },\n' +
-  '      { "num": "03", "label": "DECIDE", "title": "Short bold title", "desc": "One or two lines of body." }\n' +
+  '      { "num": "01", "label": "OPERATE", "title": "Bold title max 5 words", "desc": "One sentence, max 15 words." },\n' +
+  '      { "num": "02", "label": "SERVE", "title": "Bold title max 5 words", "desc": "One sentence, max 15 words." },\n' +
+  '      { "num": "03", "label": "DECIDE", "title": "Bold title max 5 words", "desc": "One sentence, max 15 words." }\n' +
   '    ],\n' +
   '    "cta_button": "Read the field guide",\n' +
   '    "accent_color": "#84cc16",\n' +
   '    "bg_color": "#0a0a0a",\n' +
   '    "layout_style": "three_col",\n' +
   '    "category_tag": "A FIELD GUIDE TO AI",\n' +
-  '    "meta_left": "TECH TIPS · FIELD NOTES",\n' +
-  '    "meta_right": "READ 2 MIN",\n' +
+  '    "meta_left": "CATEGORY · SERIES NAME",\n' +
+  '    "meta_right": "READ 2 MIN\\nFILED DD·MM·YY",\n' +
   '    "vol_label": "VOL. 04 · THE AI ISSUE · 2026",\n' +
   '    "emoji": ""\n' +
   '  }\n' +
@@ -260,9 +261,9 @@ function buildContentUserPrompt(payload) {
     '  "subheadline": "10-22 words for the card",\n' +
     '  "bullets": ["up to 3 strings"],\n' +
     '  "columns": [\n' +
-    '    { "num": "01", "label": "LABEL", "title": "Title", "desc": "Description." },\n' +
-    '    { "num": "02", "label": "LABEL", "title": "Title", "desc": "Description." },\n' +
-    '    { "num": "03", "label": "LABEL", "title": "Title", "desc": "Description." }\n' +
+    '    { "num": "01", "label": "LABEL", "title": "Max 5 words", "desc": "Max 15 words." },\n' +
+    '    { "num": "02", "label": "LABEL", "title": "Max 5 words", "desc": "Max 15 words." },\n' +
+    '    { "num": "03", "label": "LABEL", "title": "Max 5 words", "desc": "Max 15 words." }\n' +
     '  ],\n' +
     '  "cta_button": "button label",\n' +
     '  "accent_color": "#RRGGBB",\n' +
@@ -270,11 +271,11 @@ function buildContentUserPrompt(payload) {
     '  "layout_style": "hero | split | quote | listicle | three_col",\n' +
     '  "category_tag": "ALL CAPS PILL",\n' +
     '  "meta_left": "SMALL CAPS LEFT",\n' +
-    '  "meta_right": "SMALL CAPS RIGHT",\n' +
+    '  "meta_right": "Line1 READ X MIN then newline then Line2 FILED DD·MM·YY",\n' +
     '  "vol_label": "optional vertical label or empty string",\n' +
     '  "emoji": "one emoji or empty string"\n' +
     '}\n' +
-    'Use layout_style "three_col" with three meaningful columns when the post presents 3 tips, reasons, or steps. headline_crossout and headline_highlight must each match one word in headline (after normalizing punctuation). Fill meta_left and meta_right with editorial microcopy appropriate to the platform.\n' +
+    'Use layout_style "three_col" with three meaningful columns when the post presents exactly 3 tips, reasons, or steps. headline_crossout and headline_highlight must each match one word in headline. accent_color must be one of the palette hexes listed in the system prompt. Each column desc must be at most ~15 words.\n' +
     '\n' +
     'Write only for these platforms: ' +
     payload.platforms.join(',') +

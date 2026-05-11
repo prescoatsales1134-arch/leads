@@ -1,5 +1,13 @@
 /**
  * Dashboard Content tab: multi-step AI social copy (server-side OpenAI + daily cap).
+ *
+ * Image pipeline runs only on the server (see server.js POST /api/content-generate):
+ *   const hctiResult = await renderImageViaHCTI(html);
+ *   const enhanced = await enhanceImageFromDataUri(hctiResult.base64, ctx);
+ *   const finalBase64 = enhanced ? enhanced.base64 : hctiResult.base64;
+ *   const permanentUrl = await uploadImageToSupabase(finalBase64, postId);
+ *   const finalImageUrl = permanentUrl || hctiResult.url;
+ * The API returns posts with imageBase64 and imageUrl (Supabase public URL when upload succeeds).
  */
 (function (global) {
   var currentStep = 1;
@@ -217,12 +225,14 @@
       var safeContent = escapeHtml(p.content || '').replace(/\n/g, '<br>');
       var platLabel = PLATFORM_LABELS[p.platform] || p.platform;
       var imageBlock = '';
-      if (p.imageBase64) {
-        var dlHref = p.imageUrl || p.imageBase64;
+      if (p.imageBase64 || p.imageUrl) {
+        var imgSrc =
+          p.imageUrl && /^https?:/gi.test(p.imageUrl) ? p.imageUrl : p.imageBase64 || '';
+        var dlHref = p.imageUrl && /^https?:/i.test(p.imageUrl) ? p.imageUrl : p.imageBase64 || '';
         imageBlock =
           '<div class="content-tool-image-wrapper">' +
           '<img src="' +
-          escapeHtml(p.imageBase64) +
+          escapeHtml(imgSrc) +
           '" class="content-tool-post-image" alt="Generated post image for ' +
           escapeHtml(platLabel) +
           '">' +

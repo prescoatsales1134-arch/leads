@@ -406,6 +406,20 @@ To get a user’s UUID: **Authentication** → **Users** → copy the user’s *
 
 ---
 
+## 6b. Storage bucket `content-images` (Content tab PNGs)
+
+Generated social cards are uploaded to **Supabase Storage** from the Node server (`content-image-storage.js`) using the **service role** key. You need a **public** bucket so `getPublicUrl()` links work in the dashboard.
+
+Run the SQL in **`scripts/supabase-content-images-storage.sql`** once (Supabase → SQL Editor). It:
+
+- Creates the **`content-images`** bucket (public, PNG only, 10MB limit).
+- Adds a **storage** policy so objects are readable publicly.
+- Creates **`public.content_posts`** with `image_url` and RLS so users can `select` their own rows (inserts from the server use the service role and bypass RLS).
+
+After running, confirm in **Storage** → **Buckets** that **content-images** exists and is **public**.
+
+---
+
 ## 7. Test the flow
 
 1. Serve the app (e.g. `npx serve .` in the project folder).
