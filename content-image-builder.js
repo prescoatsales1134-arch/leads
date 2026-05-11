@@ -1,5 +1,6 @@
 /**
- * Dark editorial social cards: HTML → PNG via node-html-to-image (Puppeteer).
+ * Dark editorial social cards: HTML → PNG via Puppeteer (no node-html-to-image:
+ * that package calls process.exit(1) on errors and kills the server).
  */
 
 'use strict';
@@ -479,21 +480,46 @@ function buildPostHtml(design, brandName, brandHandle, width, height) {
 }
 
 /**
- * Renders via node-html-to-image (Puppeteer cluster under the hood).
+ * Renders HTML to PNG. On Linux VPS: install Chrome via Puppeteer postinstall, or
+ * apt install chromium-browser and set PUPPETEER_EXECUTABLE_PATH (or CHROME_PATH).
  */
 async function renderImageLocally(htmlString) {
-  var nodeHtmlToImage = require('node-html-to-image');
-  var result = await nodeHtmlToImage({
-    html: htmlString,
-    type: 'png',
-    puppeteerArgs: { args: ['--no-sandbox', '--disable-setuid-sandbox'] },
-    timeout: 120000
-  });
-  var buf = Buffer.isBuffer(result) ? result : Buffer.from(result || '');
-  if (!buf.length) {
-    throw new Error('Empty PNG buffer from node-html-to-image');
+  var puppeteer = require('puppeteer');
+  var exe =
+    String(process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH || '').trim() ||
+    undefined;
+  var launchOpts = {
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu'
+    ]
+  };
+  if (exe) launchOpts.executablePath = exe;
+  var browser;
+  try {
+    browser = await puppeteer.launch(launchOpts);
+    var page = await browser.newPage();
+    await page.setDefaultNavigationTimeout(120000);
+    await page.setDefaultTimeout(120000);
+    await page.setViewport({ width: 1080, height: 1080, deviceScaleFactor: 1 });
+    await page.setContent(htmlString, { waitUntil: 'load' });
+    var el = await page.$('body');
+    if (!el) {
+      throw new Error('No body element for screenshot');
+    }
+    var buf = await el.screenshot({ type: 'png' });
+    if (!buf || !buf.length) {
+      throw new Error('Empty PNG buffer from Puppeteer');
+    }
+    return { url: null, base64: 'data:image/png;base64,' + Buffer.from(buf).toString('base64') };
+  } finally {
+    if (browser) {
+      await browser.close().catch(function () {});
+    }
   }
-  return { url: null, base64: 'data:image/png;base64,' + buf.toString('base64') };
 }
 
 function renderImageViaHCTI(html) {
