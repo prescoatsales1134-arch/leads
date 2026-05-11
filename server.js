@@ -15,6 +15,7 @@ const cookieParser = require('cookie-parser');
 const { createClient } = require('@supabase/supabase-js');
 const contentGenLib = require('./content-generate-lib');
 const contentImageBuilder = require('./content-image-builder');
+const contentImageGen = require('./content-image-generator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -867,10 +868,6 @@ app.post('/api/content-generate', function (req, res) {
               characterCount: p.characterCount || (p.content && p.content.length) || 0
             };
           });
-          var hctiConfigured =
-            (process.env.HCTI_USER_ID || '').trim() &&
-            (process.env.HCTI_API_KEY || '').trim();
-          var brandHandle = contentImageBuilder.suggestBrandHandle(businessName);
 
           function finishContentResponse(posts) {
             return supabaseAdmin.from('content_generation_log').insert({ user_id: user.id }).then(function (ins) {
@@ -880,6 +877,12 @@ app.post('/api/content-generate', function (req, res) {
               res.json({ posts: posts });
             });
           }
+
+          var hctiConfigured =
+            (process.env.HCTI_USER_ID || '').trim() &&
+            (process.env.HCTI_API_KEY || '').trim();
+          var openaiConfigured = (process.env.OPENAI_API_KEY || '').trim();
+          var brandHandle = contentImageBuilder.suggestBrandHandle(businessName);
 
           if (!hctiConfigured) {
             normalised.forEach(function (post) {
@@ -901,15 +904,39 @@ app.post('/api/content-generate', function (req, res) {
                     1080,
                     1080
                   );
-                  return contentImageBuilder.renderImageViaHCTI(html);
+                  return contentImageBuilder.renderImageViaHCTI(html).then(function (hcti) {
+                    return { design: design, hcti: hcti };
+                  });
                 })
-                .then(function (img) {
-                  post.imageUrl = img.url;
-                  post.imageBase64 = img.base64;
-                  return post;
+                .then(function (bundle) {
+                  var hcti = bundle.hcti;
+                  var design = bundle.design;
+                  var ctx = {
+                    platform: post.platform,
+                    businessName: businessName,
+                    contentTopic: contentTopic,
+                    headline: design.headline,
+                    subheadline: design.subheadline,
+                    accent_color: design.accent_color
+                  };
+                  if (!openaiConfigured) {
+                    post.imageBase64 = hcti.base64;
+                    post.imageUrl = hcti.url;
+                    return post;
+                  }
+                  return contentImageGen.enhanceImageFromDataUri(hcti.base64, ctx).then(function (enh) {
+                    if (enh && enh.base64) {
+                      post.imageBase64 = enh.base64;
+                      post.imageUrl = null;
+                    } else {
+                      post.imageBase64 = hcti.base64;
+                      post.imageUrl = hcti.url;
+                    }
+                    return post;
+                  });
                 })
                 .catch(function (err) {
-                  console.error('[content-generate] HCTI failed for', post.platform, err.message);
+                  console.error('[content-generate] image pipeline failed for', post.platform, err.message);
                   post.imageUrl = null;
                   post.imageBase64 = null;
                   return post;

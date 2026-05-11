@@ -20,7 +20,10 @@
     'Crafting compelling hooks…',
     'Optimizing hashtag strategy…',
     'Designing your visual…',
-    'Rendering post graphics…',
+    'Rendering card artwork…',
+    'Polishing visuals with AI…',
+    'Generating post graphics…',
+    'Rendering brand imagery…',
     'Polishing the final copy…',
     'Almost there…'
   ];
@@ -212,33 +215,33 @@
       }).join('');
       var charCount = p.characterCount || (p.content && p.content.length) || 0;
       var safeContent = escapeHtml(p.content || '').replace(/\n/g, '<br>');
-      var imageSection = '';
+      var platLabel = PLATFORM_LABELS[p.platform] || p.platform;
+      var imageBlock = '';
       if (p.imageBase64) {
-        imageSection =
+        var dlHref = p.imageUrl || p.imageBase64;
+        imageBlock =
+          '<div class="content-tool-image-wrapper">' +
           '<img src="' +
           escapeHtml(p.imageBase64) +
-          '" class="content-tool-post-image" alt="Generated post image">';
-      }
-      var dlHref = p.imageUrl || p.imageBase64;
-      var downloadBtn = '';
-      if (dlHref) {
-        downloadBtn =
+          '" class="content-tool-post-image" alt="Generated post image for ' +
+          escapeHtml(platLabel) +
+          '">' +
           '<a href="' +
           escapeHtml(dlHref) +
           '" download="post-' +
           escapeHtml(p.platform) +
-          '.png" class="btn btn-secondary btn-sm content-tool-download-btn">Download Image</a>';
+          '.png" class="btn btn-secondary btn-sm content-tool-download-btn">⬇ Download Image</a>' +
+          '</div>';
       }
 
       div.innerHTML =
+        imageBlock +
         '<div class="content-tool-result-box">' +
         '<div class="content-tool-result-actions">' +
         '<button type="button" class="btn btn-secondary btn-sm content-tool-copy-btn" data-copy-platform="' +
         escapeHtml(p.platform) +
         '">Copy</button>' +
-        downloadBtn +
         '</div>' +
-        imageSection +
         '<div class="content-tool-result-text" id="content-text-' +
         escapeHtml(p.platform) +
         '">' +

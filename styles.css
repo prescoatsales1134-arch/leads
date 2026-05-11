@@ -2918,12 +2918,25 @@ body.modal-open {
   z-index: 1;
 }
 
+.content-tool-image-wrapper {
+  position: relative;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
 .content-tool-post-image {
   width: 100%;
-  max-width: 400px;
+  max-width: 480px;
   border-radius: 12px;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.content-tool-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .content-tool-result-text {

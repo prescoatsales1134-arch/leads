@@ -1,6 +1,5 @@
 /**
  * Build HTML for branded social post cards and render via HCTI.io (HTML/CSS to PNG).
- * Ported from n8n "Build HTML" node in automation.json.
  */
 
 'use strict';
@@ -23,11 +22,6 @@ function sanitizeHexColor(val, fallback) {
   return fallback;
 }
 
-/**
- * Normalize OpenAI post object design fields for the image template.
- * @param {object} aiPost — raw post from model (includes text + design keys)
- * @param {string} fallbackHeadline — e.g. content topic
- */
 function normalizeDesign(aiPost, fallbackHeadline) {
   var d = aiPost || {};
   var bullets = Array.isArray(d.bullets)
@@ -99,14 +93,6 @@ function buildMainBlock(d) {
   return '<p class="sub">' + esc(d.subheadline) + '</p>';
 }
 
-/**
- * @param {object} design — normalized design tokens
- * @param {string} brandName
- * @param {string} brandHandle — e.g. @acme
- * @param {number} [width=1080]
- * @param {number} [height=1080]
- * @returns {string} full HTML document
- */
 function buildPostHtml(design, brandName, brandHandle, width, height) {
   width = width || 1080;
   height = height || 1080;
@@ -370,11 +356,6 @@ function buildPostHtml(design, brandName, brandHandle, width, height) {
   );
 }
 
-/**
- * POST HTML to HCTI and fetch PNG bytes. viewport 540×540 + device_scale 2 → 1080×1080 output.
- * @param {string} htmlString
- * @returns {Promise<{ url: string, base64: string }>}
- */
 function renderImageViaHCTI(htmlString) {
   var userId = (process.env.HCTI_USER_ID || '').trim();
   var apiKey = (process.env.HCTI_API_KEY || '').trim();
