@@ -383,6 +383,82 @@ function getContentPostLimitAndUsage(adminClient, userId) {
   });
 }
 
+// --- Competitor analysis: UTC daily cap + optional one-time trial when per-day is 0 ---
+function readCompetitorAnalysisSettings(adminClient, userId) {
+  return adminClient
+    .from('profiles')
+    .select('competitor_analysis_per_day, competitor_analysis_trial_used')
+    .eq('id', userId)
+    .maybeSingle()
+    .then(function (r) {
+      if (!r || r.error || !r.data) return undefined;
+      var raw = r.data.competitor_analysis_per_day;
+      var trialUsed = !!r.data.competitor_analysis_trial_used;
+      var n;
+      if (raw === null || raw === '') n = null;
+      else {
+        n = parseInt(raw, 10);
+        if (isNaN(n) || n < 0) n = 0;
+      }
+      return { perDay: n, trialUsed: trialUsed };
+    })
+    .catch(function () {
+      return undefined;
+    });
+}
+
+function getCompetitorAnalysisLimitAndUsage(adminClient, userId) {
+  if (!adminClient || !userId) {
+    return Promise.resolve({ limit: 0, used: 0, remaining: 0, mode: 'blocked' });
+  }
+  var bounds = utcDayBounds();
+  return readCompetitorAnalysisSettings(adminClient, userId).then(function (settings) {
+    if (settings === undefined) {
+      return { limit: 0, used: 0, remaining: 0, mode: 'blocked' };
+    }
+    function countToday() {
+      return adminClient
+        .from('competitor_analysis_log')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', bounds.startIso)
+        .lt('created_at', bounds.endIso)
+        .then(function (c) {
+          return c && c.count != null ? c.count : 0;
+        });
+    }
+    var perDay = settings.perDay;
+    var trialUsed = settings.trialUsed;
+    return countToday().then(function (used) {
+      if (perDay === null) {
+        return { limit: null, used: used, remaining: null, mode: 'unlimited' };
+      }
+      if (perDay > 0) {
+        var remDaily = Math.max(0, perDay - used);
+        return { limit: perDay, used: used, remaining: remDaily, mode: 'daily' };
+      }
+      if (!trialUsed) {
+        return { limit: 0, used: used, remaining: 1, mode: 'trial' };
+      }
+      return { limit: 0, used: used, remaining: 0, mode: 'blocked' };
+    });
+  }).catch(function () {
+    return { limit: 0, used: 0, remaining: 0, mode: 'blocked' };
+  });
+}
+
+function normalizeCompetitorDomain(input) {
+  var s = input != null ? String(input).trim() : '';
+  if (!s) return '';
+  if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+  try {
+    var u = new URL(s);
+    return u.hostname.replace(/^www\./i, '').toLowerCase();
+  } catch (e) {
+    return '';
+  }
+}
+
 // ---------- Auth routes ----------
 
 app.get('/auth/google', function (req, res) {
@@ -608,7 +684,10 @@ app.get('/api/profiles', function (req, res) {
       if (!auth) return res.status(401).json({ error: 'Invalid session' });
       return resolveRole(supabaseAdmin, auth.user.id).then(function (role) {
         if (role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
-        return supabaseAdmin.from('profiles').select('id, email, full_name, role, lead_generation_limit, content_posts_per_day').order('email');
+        return supabaseAdmin
+          .from('profiles')
+          .select('id, email, full_name, role, lead_generation_limit, content_posts_per_day, competitor_analysis_per_day')
+          .order('email');
       });
     })
     .then(function (result) {
@@ -699,6 +778,39 @@ app.patch('/api/profiles/:id/content_post_limit', function (req, res) {
     });
 });
 
+app.patch('/api/profiles/:id/competitor_analysis_limit', function (req, res) {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
+  const targetUserId = req.params.id;
+  const raw = req.body && req.body.competitor_analysis_per_day;
+  const value = raw === null || raw === undefined || raw === '' ? null : parseInt(raw, 10);
+  if (value !== null && (isNaN(value) || value < 0)) {
+    return res.status(400).json({
+      error: 'competitor_analysis_per_day must be a non-negative number or null (unlimited)'
+    });
+  }
+  if (!targetUserId) return res.status(400).json({ error: 'Missing user id' });
+  getAuthUser(req, res)
+    .then(function (auth) {
+      if (!auth) return res.status(401).json({ error: 'Invalid session' });
+      return resolveRole(supabaseAdmin, auth.user.id).then(function (currentRole) {
+        if (currentRole !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+        return supabaseAdmin
+          .from('profiles')
+          .update({ competitor_analysis_per_day: value })
+          .eq('id', targetUserId)
+          .select();
+      });
+    })
+    .then(function (result) {
+      if (res.headersSent) return;
+      if (result && result.error) return res.status(500).json({ error: result.error.message });
+      res.json({ ok: true });
+    })
+    .catch(function () {
+      if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+    });
+});
+
 // GET /api/linkedin-filter-options — Peakydev-aligned industries, countries, regions, seniority, company sizes (LinkedIn generate)
 app.get('/api/linkedin-filter-options', function (req, res) {
   requireUser(req, res, function () {
@@ -766,6 +878,144 @@ app.get('/api/content-post-limit', function (req, res) {
     }).catch(function () {
       if (!res.headersSent) res.status(500).json({ error: 'Server error' });
     });
+  });
+});
+
+// GET /api/competitor-analysis-limit — daily competitor analysis cap (UTC) + trial
+app.get('/api/competitor-analysis-limit', function (req, res) {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
+  requireUser(req, res, function (user) {
+    if (res.headersSent) return;
+    getCompetitorAnalysisLimitAndUsage(supabaseAdmin, user.id)
+      .then(function (info) {
+        var limit = info.limit;
+        var used = info.used;
+        var remaining = info.remaining;
+        if (info.mode === 'unlimited') {
+          remaining = null;
+        } else if (info.mode === 'daily' && limit != null) {
+          remaining = Math.max(0, limit - used);
+        }
+        res.json({ limit: limit, used: used, remaining: remaining, mode: info.mode });
+      })
+      .catch(function () {
+        if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+      });
+  });
+});
+
+// POST /api/competitor-analyze — proxy to n8n; logs use after success; enforces cap / trial
+app.post('/api/competitor-analyze', function (req, res) {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
+  var webhookDefault =
+    'https://n8n-p6qh.srv1456780.hstgr.cloud/webhook/overlook-competitor-analyze';
+  var webhookUrl = (process.env.N8N_COMPETITOR_ANALYSIS_WEBHOOK || webhookDefault).trim();
+  requireUser(req, res, function (user) {
+    if (res.headersSent) return;
+    var body = req.body && typeof req.body === 'object' ? req.body : {};
+    var rawUrl = body.url != null ? body.url : body.domain;
+    var domain = normalizeCompetitorDomain(rawUrl);
+    if (!domain) {
+      return res.status(400).json({ error: 'Enter a valid website URL (e.g. https://competitor.com)' });
+    }
+    getCompetitorAnalysisLimitAndUsage(supabaseAdmin, user.id)
+      .then(function (info) {
+        if (info.mode === 'blocked') {
+          return res.status(403).json({
+            error:
+              'No competitor analyses left. New accounts get one complimentary report, then Basic (1/day), Standard (3/day), or Premium (5/day)—or ask an admin to set your daily limit.'
+          });
+        }
+        if (info.mode === 'daily' && info.limit != null && info.used >= info.limit) {
+          return res.status(403).json({
+            error:
+              'Daily competitor analysis limit reached (' +
+              info.limit +
+              ' per UTC day). Try again tomorrow or ask an admin to raise your limit.'
+          });
+        }
+        var payload = JSON.stringify({ domain: domain });
+        var ctrl = new AbortController();
+        var timeoutMs = parseInt(process.env.N8N_COMPETITOR_TIMEOUT_MS || '300000', 10);
+        var t = setTimeout(function () {
+          ctrl.abort();
+        }, timeoutMs);
+        return fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: payload,
+          signal: ctrl.signal
+        })
+          .then(function (wh) {
+            clearTimeout(t);
+            return wh.text().then(function (txt) {
+              return { ok: wh.ok, status: wh.status, raw: txt || '' };
+            });
+          })
+          .catch(function (err) {
+            clearTimeout(t);
+            var msg = err && err.message ? err.message : 'Webhook request failed';
+            if (err && err.name === 'AbortError') msg = 'Analysis timed out — try again or check workflow runtime.';
+            throw new Error(msg);
+          })
+          .then(function (ref) {
+            if (!ref.ok) {
+              var detail = ref.raw;
+              try {
+                var j = JSON.parse(ref.raw);
+                detail = (j && j.error) || (j && j.message) || detail;
+              } catch (e) {
+                /* ignore */
+              }
+              return res.status(502).json({
+                error: detail || 'Competitor workflow returned HTTP ' + ref.status
+              });
+            }
+            var data;
+            try {
+              data = JSON.parse(ref.raw);
+            } catch (e) {
+              return res.status(502).json({ error: 'Invalid JSON from competitor workflow' });
+            }
+            if (!Array.isArray(data)) {
+              return res.status(502).json({ error: 'Workflow must return a JSON array of reports' });
+            }
+            if (data.length === 0) {
+              return res.status(502).json({
+                error: 'Workflow returned no report data. Check the workflow output and try again.'
+              });
+            }
+            return supabaseAdmin
+              .from('competitor_analysis_log')
+              .insert({ user_id: user.id })
+              .then(function (ins) {
+                if (ins.error) {
+                  console.error('[competitor-analyze] log insert failed:', ins.error.message);
+                }
+                if (info.mode === 'trial') {
+                  return supabaseAdmin
+                    .from('profiles')
+                    .update({ competitor_analysis_trial_used: true })
+                    .eq('id', user.id)
+                    .then(function (up) {
+                      if (up.error) {
+                        console.error('[competitor-analyze] trial flag update failed:', up.error.message);
+                      }
+                      res.json({ domain: domain, reports: data });
+                    });
+                }
+                res.json({ domain: domain, reports: data });
+              });
+          })
+          .catch(function (err) {
+            if (!res.headersSent) {
+              res.status(502).json({ error: err && err.message ? err.message : 'Analysis failed' });
+            }
+          });
+      })
+      .catch(function () {
+        if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+      });
   });
 });
 
@@ -1077,6 +1327,10 @@ function n8nWebhookUrlForServerExecution(url) {
 
 console.log('[env] N8N_GENERATE_LEADS_WEBHOOK:', parseN8nWebhookUrl(process.env.N8N_GENERATE_LEADS_WEBHOOK || '') ? 'configured' : 'not set');
 console.log('[env] N8N_GENERATE_GOOGLE_LEADS_WEBHOOK:', parseN8nWebhookUrl(process.env.N8N_GENERATE_GOOGLE_LEADS_WEBHOOK || '') ? 'configured' : 'not set');
+console.log(
+  '[env] N8N_COMPETITOR_ANALYSIS_WEBHOOK:',
+  (process.env.N8N_COMPETITOR_ANALYSIS_WEBHOOK || '').trim() ? 'configured (override)' : 'using built-in default URL'
+);
 
 function normalizeLeadSource(v) {
   if (v === 'google' || (v && String(v).toLowerCase() === 'google')) return 'google';

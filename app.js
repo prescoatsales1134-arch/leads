@@ -504,6 +504,10 @@
           var currentRole = p.role || 'Manager';
           var limitVal = p.lead_generation_limit != null && p.lead_generation_limit !== '' ? String(p.lead_generation_limit) : '';
           var postsDayVal = p.content_posts_per_day != null && p.content_posts_per_day !== '' ? String(p.content_posts_per_day) : '';
+          var compDayVal =
+            p.competitor_analysis_per_day != null && p.competitor_analysis_per_day !== ''
+              ? String(p.competitor_analysis_per_day)
+              : '';
           return '<tr data-user-id="' + escapeHtml(p.id) + '">' +
             '<td>' + escapeHtml(p.email || '—') + '</td>' +
             '<td>' + escapeHtml(p.full_name || '—') + '</td>' +
@@ -513,6 +517,7 @@
             '</select></td>' +
             '<td><input type="number" min="0" step="1" class="manage-user-limit input-narrow" data-user-id="' + escapeHtml(p.id) + '" value="' + escapeHtml(limitVal) + '" placeholder="Unlimited" title="Max leads per month; leave empty for unlimited" /></td>' +
             '<td><input type="number" min="0" step="1" class="manage-user-content-posts input-narrow" data-user-id="' + escapeHtml(p.id) + '" value="' + escapeHtml(postsDayVal) + '" placeholder="Unlimited" title="Max content generations per UTC day; leave empty for unlimited; 0 blocks" /></td>' +
+            '<td><input type="number" min="0" step="1" class="manage-user-competitor input-narrow" data-user-id="' + escapeHtml(p.id) + '" value="' + escapeHtml(compDayVal) + '" placeholder="Unlimited" title="Max competitor analyses per UTC day; leave empty for unlimited; 0 = trial only then block" /></td>' +
             '<td><button type="button" class="btn btn-secondary btn-sm btn-save-role" data-user-id="' + escapeHtml(p.id) + '">Save</button></td></tr>';
         }).join('');
 
@@ -523,6 +528,7 @@
             var select = row ? row.querySelector('.manage-user-role') : null;
             var limitInput = row ? row.querySelector('.manage-user-limit') : null;
             var postsInput = row ? row.querySelector('.manage-user-content-posts') : null;
+            var compInput = row ? row.querySelector('.manage-user-competitor') : null;
             if (!select) return;
             var newRole = select.value;
             var limitRaw = limitInput ? limitInput.value.trim() : '';
@@ -531,6 +537,9 @@
             var postsRaw = postsInput ? postsInput.value.trim() : '';
             var postsBody = postsRaw === '' ? null : parseInt(postsRaw, 10);
             if (postsRaw !== '' && (isNaN(postsBody) || postsBody < 0)) postsBody = null;
+            var compRaw = compInput ? compInput.value.trim() : '';
+            var compBody = compRaw === '' ? null : parseInt(compRaw, 10);
+            if (compRaw !== '' && (isNaN(compBody) || compBody < 0)) compBody = null;
             btn.disabled = true;
             var rolePromise = fetch('/api/profiles/' + encodeURIComponent(userId) + '/role', {
               method: 'PATCH',
@@ -550,14 +559,21 @@
               body: JSON.stringify({ content_posts_per_day: postsBody }),
               credentials: 'same-origin'
             });
-            Promise.all([rolePromise, limitPromise, contentPostsPromise])
+            var competitorPromise = fetch('/api/profiles/' + encodeURIComponent(userId) + '/competitor_analysis_limit', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ competitor_analysis_per_day: compBody }),
+              credentials: 'same-origin'
+            });
+            Promise.all([rolePromise, limitPromise, contentPostsPromise, competitorPromise])
               .then(function (responses) {
                 btn.disabled = false;
                 var roleOk = responses[0].ok;
                 var limitOk = responses[1].ok;
                 var postsOk = responses[2].ok;
-                if (roleOk && limitOk && postsOk && global.utils && global.utils.toast) global.utils.toast('Saved', 'success');
-                else if ((!roleOk || !limitOk || !postsOk) && global.utils && global.utils.toast) global.utils.toast('Failed to save', 'error');
+                var compOk = responses[3].ok;
+                if (roleOk && limitOk && postsOk && compOk && global.utils && global.utils.toast) global.utils.toast('Saved', 'success');
+                else if ((!roleOk || !limitOk || !postsOk || !compOk) && global.utils && global.utils.toast) global.utils.toast('Failed to save', 'error');
               })
               .catch(function () {
                 btn.disabled = false;
