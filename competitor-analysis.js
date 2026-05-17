@@ -67,14 +67,27 @@
       .replace(/"/g, '&quot;');
   }
 
+  /** Readable label: spaces, sentence case (first letter uppercase). */
+  function humanizeKey(key) {
+    var raw = String(key)
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, function (_, a, b) {
+        return a + ' ' + b;
+      })
+      .trim();
+    if (!raw) return '';
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }
+
   function formatLabel(key) {
-    return escapeHtml(
-      String(key)
-        .replace(/_/g, ' ')
-        .replace(/([a-z])([A-Z])/g, function (_, a, b) {
-          return a + ' ' + b;
-        })
-    );
+    return escapeHtml(humanizeKey(key));
+  }
+
+  /** First character only; rest unchanged (for API-provided titles). */
+  function capitalizeFirst(str) {
+    if (str == null || str === '') return '';
+    var s = String(str);
+    return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
   function cloneWithoutReportMetadata(node) {
@@ -197,7 +210,7 @@
       .join('');
     return (
       '<article class="ca-insight-card">' +
-      (title ? '<h4 class="ca-insight-title">' + escapeHtml(title) + '</h4>' : '') +
+      (title ? '<h4 class="ca-insight-title">' + escapeHtml(capitalizeFirst(title)) + '</h4>' : '') +
       '<div class="ca-insight-body">' +
       rows +
       '</div></article>'
@@ -223,12 +236,12 @@
     );
   }
 
-  function wrapSubsection(title, innerHtml) {
+  function wrapSubsection(titlePlain, innerHtml) {
     if (!innerHtml || !String(innerHtml).trim()) return '';
     return (
       '<div class="ca-subsection">' +
       '<h5 class="ca-subsection-title">' +
-      title +
+      escapeHtml(titlePlain) +
       '</h5>' +
       '<div class="ca-subsection-body">' +
       innerHtml +
@@ -252,7 +265,7 @@
     return keys
       .map(function (k) {
         var v = obj[k];
-        return wrapSubsection(formatLabel(k), renderValueForCard(v, depth + 1));
+        return wrapSubsection(humanizeKey(k), renderValueForCard(v, depth + 1));
       })
       .join('');
   }
@@ -329,8 +342,12 @@
     var eyebrowParts = [];
     if (brand) eyebrowParts.push(brand);
     if (domain) eyebrowParts.push(domain);
-    var eyebrow = eyebrowParts.length
-      ? '<div class="ca-hero-eyebrow">' + escapeHtml(eyebrowParts.join(' · ')) + '</div>'
+    var eyebrowLine = eyebrowParts.length ? eyebrowParts.join(' · ') : '';
+    if (eyebrowLine) {
+      eyebrowLine = capitalizeFirst(eyebrowLine);
+    }
+    var eyebrow = eyebrowLine
+      ? '<div class="ca-hero-eyebrow">' + escapeHtml(eyebrowLine) + '</div>'
       : '';
 
     var metrics = '';
@@ -422,12 +439,13 @@
     );
   }
 
-  function wrapSectionCard(title, innerHtml) {
+  function wrapSectionCard(titlePlain, innerHtml) {
+    var t = escapeHtml(titlePlain);
     return (
       '<section class="ca-section-card" aria-label="' +
-      escapeHtml(title) +
+      t +
       '"><header class="ca-section-card-head"><h3 class="ca-section-card-title">' +
-      escapeHtml(title) +
+      t +
       '</h3></header><div class="ca-section-card-body">' +
       innerHtml +
       '</div></section>'
@@ -435,20 +453,20 @@
   }
 
   function renderSectionByKey(key, val, depth) {
-    var title = formatLabel(key);
+    var titlePlain = humanizeKey(key);
     if (key === 'executive_summary' && val && typeof val === 'object' && !Array.isArray(val)) {
-      return wrapSectionCard(title, renderExecutiveSummaryHero(val));
+      return wrapSectionCard(titlePlain, renderExecutiveSummaryHero(val));
     }
     if (key === 'data_collection_summary' && val && typeof val === 'object' && !Array.isArray(val)) {
-      return wrapSectionCard(title, renderDataCollectionStats(val));
+      return wrapSectionCard(titlePlain, renderDataCollectionStats(val));
     }
     if (Array.isArray(val)) {
-      return wrapSectionCard(title, renderValueForCard(val, depth));
+      return wrapSectionCard(titlePlain, renderValueForCard(val, depth));
     }
     if (val && typeof val === 'object') {
-      return wrapSectionCard(title, renderObjectInner(val, depth));
+      return wrapSectionCard(titlePlain, renderObjectInner(val, depth));
     }
-    return wrapSectionCard(title, renderValueForCard(val, depth));
+    return wrapSectionCard(titlePlain, renderValueForCard(val, depth));
   }
 
   function renderPayloadAsSections(payload) {
