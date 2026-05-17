@@ -3,3 +3,5 @@ config.js
 node_modules/
 *.log
 .DS_Store
+# Local clone for design reference only (ui-ux-pro-max-skill)
+vendor/ui-ux-pro-max-skill/

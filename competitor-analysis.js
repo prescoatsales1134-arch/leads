@@ -1,9 +1,10 @@
 /**
- * Competitor Analysis tab: URL → server → n8n; tabbed report renderer.
+ * Competitor Analysis tab: URL → server → n8n; tabbed report with card-based layout.
+ * UI patterns aligned with hierarchy, elevation, and spacing best practices (dashboard / SaaS).
  */
 (function (global) {
   var TAB_SPECS = [
-    { id: 'overview', label: 'Overview', subtitle: 'Metadata & executive snapshot' },
+    { id: 'overview', label: 'Overview', subtitle: 'Executive snapshot & data coverage' },
     { id: 'sentiment', label: 'Sentiment', subtitle: 'Scores, themes, and sources' },
     { id: 'brand', label: 'Brand perception', subtitle: 'Position, UVPs, weaknesses' },
     { id: 'competitors', label: 'Competitors', subtitle: 'Landscape & intelligence' },
@@ -14,7 +15,38 @@
     { id: 'strategy', label: 'Strategy & actions', subtitle: 'Recommendations & monitoring' },
     { id: 'platforms', label: 'Platform breakdown', subtitle: 'Channel-level insights' },
     { id: 'data_quality', label: 'Data quality', subtitle: 'Confidence & limitations' },
-    { id: 'complete', label: 'Complete report', subtitle: 'Full payload (all fields)' }
+    { id: 'complete', label: 'Complete report', subtitle: 'Full structure (report metadata omitted)' }
+  ];
+
+  var TITLE_KEYS = [
+    'theme',
+    'title',
+    'action',
+    'issue',
+    'threat',
+    'priority',
+    'uvp',
+    'weakness',
+    'advantage',
+    'disadvantage',
+    'gap',
+    'segment',
+    'need',
+    'opportunity',
+    'metric',
+    'campaign',
+    'topic',
+    'influencer',
+    'name',
+    'request',
+    'pain_point',
+    'indicator',
+    'vulnerability',
+    'factor',
+    'strategy',
+    'label',
+    'controversy',
+    'headline'
   ];
 
   function $(id) {
@@ -45,67 +77,397 @@
     );
   }
 
-  function renderValue(val, depth) {
+  function cloneWithoutReportMetadata(node) {
+    if (node == null) return node;
+    if (Array.isArray(node)) {
+      return node.map(cloneWithoutReportMetadata);
+    }
+    if (typeof node !== 'object') return node;
+    var out = {};
+    Object.keys(node).forEach(function (k) {
+      if (k === 'report_metadata') return;
+      out[k] = cloneWithoutReportMetadata(node[k]);
+    });
+    return out;
+  }
+
+  function isFlatObject(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
+    return Object.keys(obj).every(function (k) {
+      var t = typeof obj[k];
+      return obj[k] === null || t === 'string' || t === 'number' || t === 'boolean';
+    });
+  }
+
+  function isPercentBreakdownObject(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
+    var keys = Object.keys(obj);
+    if (keys.length < 2) return false;
+    if (!keys.every(function (k) { return typeof obj[k] === 'number'; })) return false;
+    return keys.some(function (k) {
+      return /percentage|percent$/i.test(k) || /^positive|^neutral|^negative/i.test(k);
+    });
+  }
+
+  function renderPercentBreakdownUi(obj) {
+    var entries = Object.keys(obj).map(function (k) {
+      return { key: k, val: obj[k], label: formatLabel(k) };
+    });
+    return (
+      '<div class="ca-breakdown-bars">' +
+      entries
+        .map(function (e) {
+          var w = Math.min(100, Math.max(0, Number(e.val) || 0));
+          var tone = /positive/i.test(e.key) ? 'pos' : /negative/i.test(e.key) ? 'neg' : 'mid';
+          return (
+            '<div class="ca-bar-row">' +
+            '<div class="ca-bar-label"><span>' +
+            e.label +
+            '</span><span class="ca-bar-pct">' +
+            w +
+            '%</span></div>' +
+            '<div class="ca-bar-track" role="presentation"><div class="ca-bar-fill ca-bar-' +
+            tone +
+            '" style="width:' +
+            w +
+            '%"></div></div></div>'
+          );
+        })
+        .join('') +
+      '</div>'
+    );
+  }
+
+  function renderKeyValueGrid(obj) {
+    return (
+      '<div class="ca-kv-grid">' +
+      Object.keys(obj)
+        .map(function (k) {
+          return (
+            '<div class="ca-kv-cell">' +
+            '<span class="ca-kv-k">' +
+            formatLabel(k) +
+            '</span>' +
+            '<div class="ca-kv-v">' +
+            renderValueForCard(obj[k], 0) +
+            '</div></div>'
+          );
+        })
+        .join('') +
+      '</div>'
+    );
+  }
+
+  function pickInsightTitleKey(item) {
+    if (!item || typeof item !== 'object') return { key: null, title: null };
+    for (var i = 0; i < TITLE_KEYS.length; i++) {
+      var k = TITLE_KEYS[i];
+      if (item[k] != null && String(item[k]).trim()) {
+        return { key: k, title: String(item[k]).trim() };
+      }
+    }
+    return { key: null, title: null };
+  }
+
+  function renderInsightCard(item, depth) {
+    if (!item || typeof item !== 'object') {
+      return (
+        '<article class="ca-insight-card ca-insight-card--simple"><div class="ca-insight-body">' +
+        renderValueForCard(item, depth) +
+        '</div></article>'
+      );
+    }
+    var picked = pickInsightTitleKey(item);
+    var titleKey = picked.key;
+    var title = picked.title;
+    var rows = Object.keys(item)
+      .map(function (k) {
+        if (k === titleKey) return '';
+        var v = item[k];
+        return (
+          '<div class="ca-insight-row">' +
+          '<span class="ca-insight-k">' +
+          formatLabel(k) +
+          '</span>' +
+          '<div class="ca-insight-v">' +
+          renderValueForCard(v, depth + 1) +
+          '</div></div>'
+        );
+      })
+      .join('');
+    return (
+      '<article class="ca-insight-card">' +
+      (title ? '<h4 class="ca-insight-title">' + escapeHtml(title) + '</h4>' : '') +
+      '<div class="ca-insight-body">' +
+      rows +
+      '</div></article>'
+    );
+  }
+
+  function renderArrayAsInsightCards(arr, depth) {
+    return (
+      '<div class="ca-insight-stack">' +
+      arr
+        .map(function (item) {
+          if (item && typeof item === 'object' && !Array.isArray(item)) {
+            return renderInsightCard(item, depth);
+          }
+          return (
+            '<article class="ca-insight-card ca-insight-card--simple"><div class="ca-insight-body">' +
+            renderValueForCard(item, depth) +
+            '</div></article>'
+          );
+        })
+        .join('') +
+      '</div>'
+    );
+  }
+
+  function wrapSubsection(title, innerHtml) {
+    if (!innerHtml || !String(innerHtml).trim()) return '';
+    return (
+      '<div class="ca-subsection">' +
+      '<h5 class="ca-subsection-title">' +
+      title +
+      '</h5>' +
+      '<div class="ca-subsection-body">' +
+      innerHtml +
+      '</div></div>'
+    );
+  }
+
+  function renderObjectInner(obj, depth) {
+    if (depth > 12) return '<span class="ca-muted">…</span>';
+    if (!obj || typeof obj !== 'object') return '<span class="ca-muted">—</span>';
+    var keys = Object.keys(obj).filter(function (k) {
+      return obj[k] !== undefined;
+    });
+    if (keys.length === 0) return '<span class="ca-muted">—</span>';
+    if (isPercentBreakdownObject(obj)) {
+      return renderPercentBreakdownUi(obj);
+    }
+    if (isFlatObject(obj)) {
+      return renderKeyValueGrid(obj);
+    }
+    return keys
+      .map(function (k) {
+        var v = obj[k];
+        return wrapSubsection(formatLabel(k), renderValueForCard(v, depth + 1));
+      })
+      .join('');
+  }
+
+  function renderValueForCard(val, depth) {
     if (depth > 14) return '<span class="ca-muted">…</span>';
     if (val === null || val === undefined) return '<span class="ca-null">—</span>';
-    if (typeof val === 'boolean') return val ? '<span class="ca-bool">Yes</span>' : '<span class="ca-bool">No</span>';
-    if (typeof val === 'number') return '<span class="ca-num">' + escapeHtml(String(val)) + '</span>';
+    if (typeof val === 'boolean') {
+      return val ? '<span class="ca-bool">Yes</span>' : '<span class="ca-bool">No</span>';
+    }
+    if (typeof val === 'number') {
+      return '<span class="ca-num">' + escapeHtml(String(val)) + '</span>';
+    }
     if (typeof val === 'string') {
       var s = val;
-      if (s.length > 500) {
+      if (s.length > 1200) {
         return '<p class="ca-para">' + escapeHtml(s) + '</p>';
       }
       return '<span class="ca-str">' + escapeHtml(s) + '</span>';
     }
     if (Array.isArray(val)) {
       if (val.length === 0) return '<span class="ca-muted">Empty list</span>';
-      var allPrimitive = val.every(function (x) {
-        return x === null || ['string', 'number', 'boolean'].indexOf(typeof x) >= 0;
-      });
-      if (allPrimitive) {
-        return (
-          '<ul class="ca-list">' +
-          val
-            .map(function (x) {
-              return '<li>' + renderValue(x, depth + 1) + '</li>';
-            })
-            .join('') +
-          '</ul>'
-        );
+      if (val.every(function (x) {
+        return x !== null && typeof x === 'object' && !Array.isArray(x);
+      })) {
+        return renderArrayAsInsightCards(val, depth);
       }
       return (
-        '<div class="ca-card-stack">' +
+        '<ul class="ca-list">' +
         val
-          .map(function (item) {
-            return '<article class="ca-nested-card">' + renderValue(item, depth + 1) + '</article>';
+          .map(function (x) {
+            return '<li>' + renderValueForCard(x, depth + 1) + '</li>';
           })
           .join('') +
-        '</div>'
+        '</ul>'
       );
     }
     if (typeof val === 'object') {
-      return renderObject(val, depth + 1);
+      return '<div class="ca-inline-nest">' + renderObjectInner(val, depth + 1) + '</div>';
     }
     return escapeHtml(String(val));
   }
 
-  function renderObject(obj, depth) {
-    var keys = Object.keys(obj || {});
-    if (keys.length === 0) return '<span class="ca-muted">—</span>';
+  function renderDataCollectionStats(obj) {
     return (
-      '<dl class="ca-dl">' +
-      keys
+      '<div class="ca-stat-grid">' +
+      Object.keys(obj)
         .map(function (k) {
           return (
-            '<div class="ca-dl-row"><dt>' +
+            '<div class="ca-stat-cell">' +
+            '<span class="ca-stat-cell-label">' +
             formatLabel(k) +
-            '</dt><dd>' +
-            renderValue(obj[k], depth) +
-            '</dd></div>'
+            '</span>' +
+            '<span class="ca-stat-cell-value">' +
+            escapeHtml(String(obj[k])) +
+            '</span></div>'
           );
         })
         .join('') +
-      '</dl>'
+      '</div>'
+    );
+  }
+
+  function renderExecutiveSummaryHero(ex) {
+    if (!ex || typeof ex !== 'object') return '';
+    var brand = ex.brand || '';
+    var domain = ex.domain || '';
+    var score = ex.overall_sentiment_score;
+    var risk = ex.risk_level || '';
+    var pos = ex.market_position || '';
+    var social = ex.social_momentum || '';
+    var findings = Array.isArray(ex.key_findings) ? ex.key_findings : [];
+
+    var eyebrowParts = [];
+    if (brand) eyebrowParts.push(brand);
+    if (domain) eyebrowParts.push(domain);
+    var eyebrow = eyebrowParts.length
+      ? '<div class="ca-hero-eyebrow">' + escapeHtml(eyebrowParts.join(' · ')) + '</div>'
+      : '';
+
+    var metrics = '';
+    if (score !== undefined && score !== null) {
+      metrics +=
+        '<div class="ca-hero-stat ca-hero-stat--score">' +
+        '<span class="ca-hero-stat-label">Sentiment score</span>' +
+        '<span class="ca-hero-stat-value">' +
+        escapeHtml(String(score)) +
+        '</span></div>';
+    }
+    if (risk) {
+      metrics +=
+        '<div class="ca-hero-stat">' +
+        '<span class="ca-hero-stat-label">Risk level</span>' +
+        '<span class="ca-badge ca-badge-risk ca-risk--' +
+        escapeHtml(String(risk).toLowerCase().replace(/[^a-z0-9]+/g, '-')) +
+        '">' +
+        escapeHtml(String(risk)) +
+        '</span></div>';
+    }
+    if (pos) {
+      metrics +=
+        '<div class="ca-hero-stat">' +
+        '<span class="ca-hero-stat-label">Market position</span>' +
+        '<span class="ca-badge ca-badge-neutral">' +
+        escapeHtml(String(pos)) +
+        '</span></div>';
+    }
+    if (social) {
+      metrics +=
+        '<div class="ca-hero-stat">' +
+        '<span class="ca-hero-stat-label">Social momentum</span>' +
+        '<span class="ca-badge ca-badge-muted">' +
+        escapeHtml(String(social)) +
+        '</span></div>';
+    }
+
+    var breakdown =
+      ex.sentiment_breakdown && isPercentBreakdownObject(ex.sentiment_breakdown)
+        ? '<div class="ca-hero-breakdown">' + renderPercentBreakdownUi(ex.sentiment_breakdown) + '</div>'
+        : '';
+
+    var findHtml = '';
+    if (findings.length) {
+      findHtml =
+        '<div class="ca-hero-findings">' +
+        '<span class="ca-hero-findings-label">Key findings</span>' +
+        '<ul class="ca-findings-list">' +
+        findings
+          .map(function (f) {
+            return '<li>' + escapeHtml(String(f)) + '</li>';
+          })
+          .join('') +
+        '</ul></div>';
+    }
+
+    var rest = {};
+    Object.keys(ex).forEach(function (k) {
+      if (
+        [
+          'brand',
+          'domain',
+          'overall_sentiment_score',
+          'risk_level',
+          'market_position',
+          'social_momentum',
+          'key_findings',
+          'sentiment_breakdown'
+        ].indexOf(k) >= 0
+      ) {
+        return;
+      }
+      rest[k] = ex[k];
+    });
+    var more =
+      Object.keys(rest).length > 0
+        ? '<div class="ca-hero-more">' + renderObjectInner(rest, 1) + '</div>'
+        : '';
+
+    return (
+      '<div class="ca-hero-card">' +
+      eyebrow +
+      (metrics ? '<div class="ca-hero-metrics">' + metrics + '</div>' : '') +
+      breakdown +
+      findHtml +
+      more +
+      '</div>'
+    );
+  }
+
+  function wrapSectionCard(title, innerHtml) {
+    return (
+      '<section class="ca-section-card" aria-label="' +
+      escapeHtml(title) +
+      '"><header class="ca-section-card-head"><h3 class="ca-section-card-title">' +
+      escapeHtml(title) +
+      '</h3></header><div class="ca-section-card-body">' +
+      innerHtml +
+      '</div></section>'
+    );
+  }
+
+  function renderSectionByKey(key, val, depth) {
+    var title = formatLabel(key);
+    if (key === 'executive_summary' && val && typeof val === 'object' && !Array.isArray(val)) {
+      return wrapSectionCard(title, renderExecutiveSummaryHero(val));
+    }
+    if (key === 'data_collection_summary' && val && typeof val === 'object' && !Array.isArray(val)) {
+      return wrapSectionCard(title, renderDataCollectionStats(val));
+    }
+    if (Array.isArray(val)) {
+      return wrapSectionCard(title, renderValueForCard(val, depth));
+    }
+    if (val && typeof val === 'object') {
+      return wrapSectionCard(title, renderObjectInner(val, depth));
+    }
+    return wrapSectionCard(title, renderValueForCard(val, depth));
+  }
+
+  function renderPayloadAsSections(payload) {
+    if (payload == null) return '<span class="ca-muted">—</span>';
+    if (typeof payload !== 'object' || Array.isArray(payload)) {
+      return wrapSectionCard('Details', renderValueForCard(payload, 0));
+    }
+    var keys = Object.keys(payload).filter(function (k) {
+      return payload[k] !== undefined && payload[k] !== null;
+    });
+    if (keys.length === 0) return '<span class="ca-muted">—</span>';
+    return (
+      '<div class="ca-section-stack">' +
+      keys
+        .map(function (k) {
+          return renderSectionByKey(k, payload[k], 0);
+        })
+        .join('') +
+      '</div>'
     );
   }
 
@@ -128,7 +490,6 @@
     switch (tabId) {
       case 'overview':
         return {
-          report_metadata: r.report_metadata,
           executive_summary: r.executive_summary,
           data_collection_summary: r.data_collection_summary
         };
@@ -181,12 +542,12 @@
     if (!panelsEl || !report) return;
     panelsEl.innerHTML = TAB_SPECS.map(function (spec) {
       var payload = buildTabPayload(spec.id, report);
-      var body =
-        spec.id === 'complete'
-          ? '<div class="ca-complete-wrap">' + renderObject(payload, 0) + '</div>'
-          : sliceEmpty(payload)
-            ? '<p class="ca-empty-note">No data in this section for this report.</p>'
-            : renderObject(payload, 0);
+      if (spec.id === 'complete') {
+        payload = cloneWithoutReportMetadata(payload);
+      }
+      var body = sliceEmpty(payload)
+        ? '<p class="ca-empty-note">No data in this section for this report.</p>'
+        : '<div class="ca-report-canvas">' + renderPayloadAsSections(payload) + '</div>';
       return (
         '<div class="ca-panel" id="ca-panel-' +
         spec.id +
