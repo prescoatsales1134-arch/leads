@@ -15,7 +15,7 @@
     { id: 'strategy', label: 'Strategy & actions', subtitle: 'Recommendations & monitoring' },
     { id: 'platforms', label: 'Platform breakdown', subtitle: 'Channel-level insights' },
     { id: 'data_quality', label: 'Data quality', subtitle: 'Confidence & limitations' },
-    { id: 'complete', label: 'Complete report', subtitle: 'Full structure (report metadata omitted)' }
+    { id: 'complete', label: 'Complete report', subtitle: 'Full structure (workflow metadata omitted)' }
   ];
 
   var TITLE_KEYS = [
@@ -90,6 +90,14 @@
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
+  /** Keys omitted from competitor report UI (workflow / plumbing). */
+  function isHiddenUiKey(k) {
+    var id = String(k)
+      .toLowerCase()
+      .replace(/-/g, '_');
+    return id === 'report_metadata' || id === 'parsing_status';
+  }
+
   function cloneWithoutReportMetadata(node) {
     if (node == null) return node;
     if (Array.isArray(node)) {
@@ -98,7 +106,7 @@
     if (typeof node !== 'object') return node;
     var out = {};
     Object.keys(node).forEach(function (k) {
-      if (k === 'report_metadata') return;
+      if (isHiddenUiKey(k)) return;
       out[k] = cloneWithoutReportMetadata(node[k]);
     });
     return out;
@@ -155,6 +163,9 @@
     return (
       '<div class="ca-kv-grid">' +
       Object.keys(obj)
+        .filter(function (k) {
+          return !isHiddenUiKey(k);
+        })
         .map(function (k) {
           return (
             '<div class="ca-kv-cell">' +
@@ -194,6 +205,9 @@
     var titleKey = picked.key;
     var title = picked.title;
     var rows = Object.keys(item)
+      .filter(function (k) {
+        return !isHiddenUiKey(k);
+      })
       .map(function (k) {
         if (k === titleKey) return '';
         var v = item[k];
@@ -253,7 +267,7 @@
     if (depth > 12) return '<span class="ca-muted">…</span>';
     if (!obj || typeof obj !== 'object') return '<span class="ca-muted">—</span>';
     var keys = Object.keys(obj).filter(function (k) {
-      return obj[k] !== undefined;
+      return obj[k] !== undefined && !isHiddenUiKey(k);
     });
     if (keys.length === 0) return '<span class="ca-muted">—</span>';
     if (isPercentBreakdownObject(obj)) {
@@ -313,6 +327,9 @@
     return (
       '<div class="ca-stat-grid">' +
       Object.keys(obj)
+        .filter(function (k) {
+          return !isHiddenUiKey(k);
+        })
         .map(function (k) {
           return (
             '<div class="ca-stat-cell">' +
@@ -416,7 +433,8 @@
           'market_position',
           'social_momentum',
           'key_findings',
-          'sentiment_breakdown'
+          'sentiment_breakdown',
+          'parsing_status'
         ].indexOf(k) >= 0
       ) {
         return;
@@ -453,6 +471,7 @@
   }
 
   function renderSectionByKey(key, val, depth) {
+    if (isHiddenUiKey(key)) return '';
     var titlePlain = humanizeKey(key);
     if (key === 'executive_summary' && val && typeof val === 'object' && !Array.isArray(val)) {
       return wrapSectionCard(titlePlain, renderExecutiveSummaryHero(val));
@@ -475,7 +494,11 @@
       return wrapSectionCard('Details', renderValueForCard(payload, 0));
     }
     var keys = Object.keys(payload).filter(function (k) {
-      return payload[k] !== undefined && payload[k] !== null;
+      return (
+        payload[k] !== undefined &&
+        payload[k] !== null &&
+        !isHiddenUiKey(k)
+      );
     });
     if (keys.length === 0) return '<span class="ca-muted">—</span>';
     return (
@@ -492,7 +515,9 @@
   function sliceEmpty(obj) {
     if (obj == null) return true;
     if (typeof obj !== 'object') return false;
-    var keys = Object.keys(obj);
+    var keys = Object.keys(obj).filter(function (k) {
+      return !isHiddenUiKey(k);
+    });
     if (keys.length === 0) return true;
     return keys.every(function (k) {
       var v = obj[k];
