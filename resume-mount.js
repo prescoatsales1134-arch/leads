@@ -51,8 +51,45 @@
     return true;
   }
 
+  function formatResumeExportLimitText(data) {
+    if (!data) return '';
+    var used = data.used != null ? data.used : 0;
+    if (data.limit == null && data.mode === 'unlimited') {
+      return 'PDF exports per month: unlimited';
+    }
+    if (data.mode === 'trial') {
+      return 'PDF exports per month: 1 (1 remaining)';
+    }
+    var limit = data.limit != null ? data.limit : 0;
+    var rem = data.remaining != null ? data.remaining : Math.max(0, limit - used);
+    return 'PDF exports per month: ' + limit + ' (' + rem + ' remaining)';
+  }
+
+  function updateResumeExportLimitDisplay() {
+    var el = document.getElementById('resume-export-limit-display');
+    if (!el) return;
+    fetch('/api/resume-export-limit', { credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then(function (data) {
+        if (!data) {
+          el.textContent = '';
+          return;
+        }
+        el.textContent = formatResumeExportLimitText(data);
+      })
+      .catch(function () {
+        el.textContent = '';
+      });
+  }
+
+  window.refreshResumeExportLimitDisplay = updateResumeExportLimitDisplay;
+
   function tryMountSoon() {
     if (!resumeHashActive()) return;
+    updateResumeExportLimitDisplay();
     if (mountIfNeeded()) return;
     if (typeof window.mountResumeBuilder !== 'function') {
       window.setTimeout(function () {

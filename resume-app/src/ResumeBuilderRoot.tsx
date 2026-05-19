@@ -344,6 +344,9 @@ export default function ResumeBuilderRoot() {
 
   const refreshExportLimit = () => {
     void fetchResumeExportLimit().then(setExportLimit);
+    if (typeof window.refreshResumeExportLimitDisplay === 'function') {
+      window.refreshResumeExportLimitDisplay();
+    }
   };
 
   useEffect(() => {
@@ -417,11 +420,6 @@ export default function ResumeBuilderRoot() {
 
       <div className="rb-layout">
         <div className="rb-panel">
-          {exportLimitLabel ? (
-            <p className="rb-muted" style={{ marginBottom: '0.5rem' }} aria-live="polite">
-              {exportLimitLabel}
-            </p>
-          ) : null}
           <p className="rb-muted" style={{ marginBottom: '1rem', maxWidth: '40rem' }}>
             Use the steps below to fill your résumé. The preview follows your chosen template — <strong>ATS</strong> uses a simple, parser-friendly layout (default). Draft saves when you pause typing (~3s) and every 30s.
           </p>

@@ -11,16 +11,15 @@ export async function fetchResumeExportLimit(): Promise<ResumeExportLimitInfo | 
   return (await r.json()) as ResumeExportLimitInfo;
 }
 
+/** Same pattern as Content tab: "Posts per day: 5 (5 remaining)" */
 export function formatResumeExportLimitLabel(info: ResumeExportLimitInfo | null): string {
   if (!info) return '';
-  if (info.mode === 'unlimited') return 'PDF exports this month (UTC): unlimited';
-  if (info.mode === 'trial') return '1 complimentary PDF export available — then a plan or admin limit applies';
-  if (info.mode === 'blocked') {
-    return 'No PDF exports remaining this month — upgrade in Pricing or ask an admin to set your limit';
-  }
+  const used = info.used ?? 0;
+  if (info.mode === 'unlimited') return 'PDF exports per month: unlimited';
+  if (info.mode === 'trial') return 'PDF exports per month: 1 (1 remaining)';
   const lim = info.limit != null ? info.limit : 0;
-  const rem = info.remaining != null ? info.remaining : Math.max(0, lim - (info.used || 0));
-  return `PDF exports this month (UTC): ${lim} (${rem} remaining)`;
+  const rem = info.remaining != null ? info.remaining : Math.max(0, lim - used);
+  return `PDF exports per month: ${lim} (${rem} remaining)`;
 }
 
 export async function requestResumeExportSlot(): Promise<void> {

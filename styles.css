@@ -3712,6 +3712,19 @@ body.modal-open {
 }
 
 /* ---- Resume builder embedded React mount ---- */
+.resume-builder-page .resume-builder-header-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.resume-builder-page .resume-builder-page-title {
+  margin-bottom: 0;
+}
+
 .resume-builder-page #resume-root,
 .resume-mount-wrapper {
   margin-top: 1rem;
