@@ -45,7 +45,7 @@ function AchievementList({ bullets }: { bullets: string[] }) {
 
 function AtsResumeHtml({ resume }: { resume: Resume }) {
   return (
-    <div className="rb-sheet rb-sheet--ats">
+    <div className="rb-sheet rb-sheet--ats rb-sheet--letter">
       <h2 className="rb-sheet-title">{resume.personalInfo.fullName || 'Your name'}</h2>
       <div className="rb-sheet-muted">{contactBits(resume.personalInfo)}</div>
       {resume.personalInfo.linkedin ? <div className="rb-sheet-muted rb-sheet-link">{resume.personalInfo.linkedin}</div> : null}

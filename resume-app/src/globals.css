@@ -374,3 +374,94 @@
   font-size: 0.74rem;
   color: #555;
 }
+
+/* Stepper (wizard) — pattern from dedicated full-page builders */
+.rb-stepper {
+  margin-bottom: 1rem;
+}
+
+.rb-stepper-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.rb-step-pill {
+  flex: 1;
+  min-width: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.45rem 0.35rem;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.rb-step-pill:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.rb-step-pill.is-active {
+  border-color: var(--accent-primary);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+.rb-step-pill.is-done {
+  border-color: rgba(167, 139, 250, 0.45);
+}
+
+.rb-step-num {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.7rem;
+}
+
+.rb-step-pill.is-active .rb-step-num,
+.rb-step-pill.is-done .rb-step-num {
+  border-color: var(--accent-primary);
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.rb-step-label {
+  text-align: center;
+  line-height: 1.25;
+}
+
+.rb-stepper-nav {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.rb-step-body {
+  min-height: 12rem;
+}
+
+/* US Letter preview (~96dpi) for ATS */
+.rb-sheet--letter {
+  width: 816px;
+  max-width: 100%;
+  min-height: 1056px;
+  box-sizing: border-box;
+  padding: 48px;
+}

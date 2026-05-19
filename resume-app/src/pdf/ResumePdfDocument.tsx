@@ -38,7 +38,7 @@ function AchievementLines({
   );
 }
 
-/** Plain ATS-focused single column */
+/** Plain ATS-focused single column — US Letter, no graphics, Helvetica (parser-safe) */
 export function AtsPdfDocument({ resume }: { resume: Resume }) {
   const s = StyleSheet.create({
     page: { padding: M, fontSize: 10, fontFamily: 'Helvetica', color: '#111' },
@@ -53,7 +53,7 @@ export function AtsPdfDocument({ resume }: { resume: Resume }) {
 
   return (
     <Document title="Resume">
-      <Page size="A4" style={s.page}>
+      <Page size="LETTER" style={s.page}>
         <Text style={s.h1}>{resume.personalInfo.fullName || 'Applicant Name'}</Text>
         <Text style={s.contact}>{contactLine(resume.personalInfo)}</Text>
         <View style={s.rule} />

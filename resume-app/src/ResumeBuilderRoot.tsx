@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Controller,
   FormProvider,
@@ -20,6 +20,7 @@ import { useResumeUiStore } from '@/store/uiStore';
 import { exportResumePdf } from '@/pdf/exportPdf';
 import { dashboardToast } from '@/utils/dashboardToast';
 import { estimateResumePages } from '@/utils/previewEstimate';
+import { SectionStepper, type FormStepId } from '@/components/SectionStepper';
 
 function formatRelative(ms: number | null): string {
   if (ms == null) return 'Autosave queued';
@@ -293,6 +294,21 @@ export default function ResumeBuilderRoot() {
   const setLastSavedAt = useResumeUiStore((s) => s.setLastSavedAt);
   const savedRef = useRef<number>(Date.now());
 
+  /** Debounced save after typing stops (~3s), pattern from actor-reference builder */
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(methods.getValues()));
+        const now = Date.now();
+        setLastSavedAt(now);
+        savedRef.current = now;
+      } catch {
+        /* quota etc.: 30s interval may surface toast */
+      }
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [live, methods, setLastSavedAt]);
+
   useEffect(() => {
     const interval = window.setInterval(() => {
       const values = methods.getValues();
@@ -317,6 +333,7 @@ export default function ResumeBuilderRoot() {
   const lastSavedAtStore = useResumeUiStore((s) => s.lastSavedAt);
 
   const pages = estimateResumePages(previewResume);
+  const [formStep, setFormStep] = useState<FormStepId>('profile');
 
   const onExport = async () => {
     const values = methods.getValues();
@@ -335,6 +352,7 @@ export default function ResumeBuilderRoot() {
     if (!window.confirm('Erase this resume draft from this browser?')) return;
     localStorage.removeItem(STORAGE_KEY);
     methods.reset(newResume());
+    setFormStep('profile');
     dashboardToast('Cleared draft.', 'info');
   };
 
@@ -351,9 +369,9 @@ export default function ResumeBuilderRoot() {
           <label style={{ margin: 0 }}>
             <span className="rb-label">Template</span>
             <select className="rb-select" value={template} onChange={(ev) => setTemplate(ev.target.value as ResumeTemplateId)}>
-              <option value="ats">ATS‑friendly</option>
-              <option value="modern">Modern purple</option>
-              <option value="classic">Classic serif</option>
+              <option value="ats">ATS — plain text (recommended)</option>
+              <option value="modern">Modern — two columns</option>
+              <option value="classic">Classic — serif</option>
             </select>
           </label>
           <button type="button" className="rb-btn rb-btn-secondary" disabled={previewZoomPct <= 70} onClick={() => setZoom(previewZoomPct - 10)}>
@@ -374,8 +392,14 @@ export default function ResumeBuilderRoot() {
 
       <div className="rb-layout">
         <div className="rb-panel">
+          <p className="rb-muted" style={{ marginBottom: '1rem', maxWidth: '40rem' }}>
+            Use the steps below to fill your résumé. The preview follows your chosen template — <strong>ATS</strong> uses a simple, parser-friendly layout (default). Draft saves when you pause typing (~3s) and every 30s.
+          </p>
+          <SectionStepper current={formStep} onChange={setFormStep}>
+            {formStep === 'profile' && (
+              <>
           <div className="rb-section-head">
-            <h3>Personal</h3>
+            <h3>Contact &amp; summary</h3>
           </div>
           <div className="rb-row-2">
             <label style={{ gridColumn: '1 / -1' }}>
@@ -413,7 +437,11 @@ export default function ResumeBuilderRoot() {
             name="personalInfo.photo"
             control={methods.control}
             render={({ field }) => (
-              <PhotoUpload value={field.value || ''} onChange={(jpeg) => field.onChange(jpeg)} />
+              <PhotoUpload
+                value={field.value || ''}
+                onChange={(jpeg) => field.onChange(jpeg)}
+                atsMode={template === 'ats'}
+              />
             )}
           />
 
@@ -421,7 +449,11 @@ export default function ResumeBuilderRoot() {
             <h3>Professional summary</h3>
           </div>
           <textarea className="rb-textarea" rows={5} {...methods.register('summary')} />
+              </>
+            )}
 
+            {formStep === 'experience' && (
+              <>
           <div className="rb-section-head">
             <h3>Experience</h3>
             <button type="button" className="rb-btn rb-btn-secondary" onClick={() => appendExp(newExperienceStub())}>
@@ -517,7 +549,11 @@ export default function ResumeBuilderRoot() {
               </div>
             </div>
           ))}
+              </>
+            )}
 
+            {formStep === 'education' && (
+              <>
           <div className="rb-section-head">
             <h3>Education</h3>
             <button type="button" className="rb-btn rb-btn-secondary" onClick={() => appendEdu(educationStub())}>
@@ -591,7 +627,11 @@ export default function ResumeBuilderRoot() {
               </div>
             </div>
           ))}
+              </>
+            )}
 
+            {formStep === 'extras' && (
+              <>
           <div className="rb-section-head">
             <h3>Skills</h3>
           </div>
@@ -654,6 +694,9 @@ export default function ResumeBuilderRoot() {
             <h3>References</h3>
           </div>
           <RepeatableReferences />
+              </>
+            )}
+          </SectionStepper>
         </div>
 
         <div className="rb-panel rb-preview-shell">

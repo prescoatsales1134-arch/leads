@@ -13,7 +13,7 @@ type UiState = {
 };
 
 export const useResumeUiStore = create<UiState>((set) => ({
-  template: 'modern',
+  template: 'ats',
   previewZoomPct: 90,
   lastSavedAt: null,
   pdfGeneration: false,

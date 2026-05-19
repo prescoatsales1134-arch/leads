@@ -7,6 +7,8 @@ import { canvasCropPreview } from '@/utils/canvasCropPreview';
 type Props = {
   value: string;
   onChange: (dataUrlJPEG: string) => void;
+  /** When true, show ATS guidance (headshots are omitted from ATS PDF) */
+  atsMode?: boolean;
 };
 
 function centerAspectCrop(mediaWidth: number, mediaHeight: number, aspect: number): Crop {
@@ -24,7 +26,7 @@ async function jpegUnderTarget(canvas: HTMLCanvasElement, targetBytes = 200_000)
   return canvas.toDataURL('image/jpeg', 0.52);
 }
 
-export function PhotoUpload({ value, onChange }: Props) {
+export function PhotoUpload({ value, onChange, atsMode }: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [step, setStep] = useState<'idle' | 'crop'>('idle');
   const [imgSrc, setImgSrc] = useState('');
@@ -91,6 +93,11 @@ export function PhotoUpload({ value, onChange }: Props) {
   return (
     <div style={{ marginTop: '0.5rem' }}>
       <label className="rb-label">Photo (optional)</label>
+      {atsMode ? (
+        <p className="rb-muted" style={{ margin: '0.35rem 0 0.5rem' }}>
+          With <strong>ATS</strong>, the exported PDF omits photos for better parser compatibility. Use Modern or Classic to include a headshot on the file.
+        </p>
+      ) : null}
 
       {step === 'idle' ? (
         <>
