@@ -6,6 +6,7 @@
   <title>Lead AI – Leads & Sales Dashboard</title>
   <link rel="icon" href="assets/favicon.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="resume-dist/resume-builder.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
@@ -41,6 +42,10 @@
       <a href="#competitor" class="nav-item" data-page="competitor">
         <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/><path d="M8 11h6M11 8v6"/></svg></span>
         <span class="menu-label">Competitor Analysis</span>
+      </a>
+      <a href="#resume" class="nav-item" data-page="resume">
+        <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+        <span class="menu-label">Resume Builder</span>
       </a>
       <a href="#pricing" class="nav-item" data-page="pricing">
         <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
@@ -477,6 +482,16 @@
         </div>
       </section>
 
+      <!-- Resume Builder (React IIFE mounts into #resume-root) -->
+      <section id="page-resume" class="page resume-builder-page">
+        <h1 class="page-title">Resume Builder</h1>
+        <p class="text-muted" style="max-width: 52rem;">
+          Build and preview résumés in your browser, then download PDFs — drafts auto-save locally every ~30&nbsp;s before export.
+          The UI ships from <code>resume-dist/</code>; run <code>npm&nbsp;run&nbsp;build:resume</code> on the server after deploying.
+        </p>
+        <div id="resume-root" class="resume-mount-wrapper" aria-live="polite"></div>
+      </section>
+
       <!-- Pricing -->
       <section id="page-pricing" class="page page-pricing-wrap">
         <div class="pricing-page-layer" aria-hidden="true"></div>
@@ -868,6 +883,12 @@
         .then(function() { return loadScript('message-assistant.js'); })
         .then(function() { return loadScript('chatbot.js?v=3'); })
         .then(function() { return loadScript('app.js?v=3'); })
+        .then(function() {
+          return loadScript('resume-dist/resume-builder.js').catch(function (err) {
+            console.warn('[resume] resume-dist/resume-builder.js missing — run npm run build:resume:', err && err.message);
+          });
+        })
+        .then(function() { return loadScript('resume-mount.js'); })
         .catch(function(e) {
           console.error(e);
           document.body.innerHTML = '<div style="padding:2rem;text-align:center;font-family:sans-serif;"><p>Could not load config. Start the server with: <code>npm start</code></p><p>' + (e.message || '') + '</p></div>';

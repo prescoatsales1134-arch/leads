@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "config": "node scripts/generate-config.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:resume": "cd resume-app && npm ci && npm run build && cd .."
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

@@ -3710,3 +3710,14 @@ body.modal-open {
   font-size: 0.875rem;
   color: var(--text-secondary);
 }
+
+/* ---- Resume builder embedded React mount ---- */
+.resume-builder-page #resume-root,
+.resume-mount-wrapper {
+  margin-top: 1rem;
+  min-height: 60vh;
+}
+
+.resume-mount-wrapper.rb-inner-error {
+  color: var(--text-secondary);
+}

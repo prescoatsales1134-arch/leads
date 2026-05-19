@@ -17,11 +17,13 @@ Run these **in order**: pull code, install deps if needed, then restart PM2.
 cd /var/www/leads-linked
 git pull origin main
 npm install
+npm run build:resume
 pm2 restart leads-linked
 pm2 save
 ```
 
 - Use your real app path if it is not `/var/www/leads-linked`.
+- **`npm run build:resume`** builds the Résumé sub-app (`resume-dist/resume-builder.js` + `resume-builder.css`) that `dashboard.html` loads — run it whenever `resume-app/` changes on that server.
 - **`pm2 save`** persists the process list after reboot (you only need it when you change which apps PM2 runs, not necessarily every deploy).
 
 ### `.env` on the VPS
