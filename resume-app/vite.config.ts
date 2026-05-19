@@ -7,9 +7,19 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
   },
+  /**
+   * Vite's `lib` build does NOT replace `process.env.NODE_ENV` by default,
+   * which crashes in a plain browser (ReferenceError: process is not defined).
+   * Define it explicitly so React + the rest of the IIFE bundle work standalone.
+   */
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+    'process.env': '{}',
+  },
   build: {
     outDir: path.resolve(__dirname, '../resume-dist'),
     emptyOutDir: true,
+    minify: 'esbuild',
     lib: {
       entry: path.resolve(__dirname, 'src/embed.tsx'),
       name: 'ResumeBuilderEmbed',
