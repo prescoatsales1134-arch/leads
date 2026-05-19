@@ -508,6 +508,10 @@
             p.competitor_analysis_per_day != null && p.competitor_analysis_per_day !== ''
               ? String(p.competitor_analysis_per_day)
               : '';
+          var resumeMoVal =
+            p.resume_exports_per_month != null && p.resume_exports_per_month !== ''
+              ? String(p.resume_exports_per_month)
+              : '';
           return '<tr data-user-id="' + escapeHtml(p.id) + '">' +
             '<td>' + escapeHtml(p.email || '—') + '</td>' +
             '<td>' + escapeHtml(p.full_name || '—') + '</td>' +
@@ -518,6 +522,7 @@
             '<td><input type="number" min="0" step="1" class="manage-user-limit input-narrow" data-user-id="' + escapeHtml(p.id) + '" value="' + escapeHtml(limitVal) + '" placeholder="Unlimited" title="Max leads per month; leave empty for unlimited" /></td>' +
             '<td><input type="number" min="0" step="1" class="manage-user-content-posts input-narrow" data-user-id="' + escapeHtml(p.id) + '" value="' + escapeHtml(postsDayVal) + '" placeholder="Unlimited" title="Max content generations per UTC day; leave empty for unlimited; 0 blocks" /></td>' +
             '<td><input type="number" min="0" step="1" class="manage-user-competitor input-narrow" data-user-id="' + escapeHtml(p.id) + '" value="' + escapeHtml(compDayVal) + '" placeholder="Unlimited" title="Max competitor analyses per UTC day; leave empty for unlimited; 0 = trial only then block" /></td>' +
+            '<td><input type="number" min="0" step="1" class="manage-user-resume-exports input-narrow" data-user-id="' + escapeHtml(p.id) + '" value="' + escapeHtml(resumeMoVal) + '" placeholder="Unlimited" title="Max résumé PDF exports per UTC month; leave empty for unlimited; 0 = trial only then block" /></td>' +
             '<td><button type="button" class="btn btn-secondary btn-sm btn-save-role" data-user-id="' + escapeHtml(p.id) + '">Save</button></td></tr>';
         }).join('');
 
@@ -529,6 +534,7 @@
             var limitInput = row ? row.querySelector('.manage-user-limit') : null;
             var postsInput = row ? row.querySelector('.manage-user-content-posts') : null;
             var compInput = row ? row.querySelector('.manage-user-competitor') : null;
+            var resumeInput = row ? row.querySelector('.manage-user-resume-exports') : null;
             if (!select) return;
             var newRole = select.value;
             var limitRaw = limitInput ? limitInput.value.trim() : '';
@@ -540,6 +546,9 @@
             var compRaw = compInput ? compInput.value.trim() : '';
             var compBody = compRaw === '' ? null : parseInt(compRaw, 10);
             if (compRaw !== '' && (isNaN(compBody) || compBody < 0)) compBody = null;
+            var resumeRaw = resumeInput ? resumeInput.value.trim() : '';
+            var resumeBody = resumeRaw === '' ? null : parseInt(resumeRaw, 10);
+            if (resumeRaw !== '' && (isNaN(resumeBody) || resumeBody < 0)) resumeBody = null;
             btn.disabled = true;
             var rolePromise = fetch('/api/profiles/' + encodeURIComponent(userId) + '/role', {
               method: 'PATCH',
@@ -565,15 +574,22 @@
               body: JSON.stringify({ competitor_analysis_per_day: compBody }),
               credentials: 'same-origin'
             });
-            Promise.all([rolePromise, limitPromise, contentPostsPromise, competitorPromise])
+            var resumePromise = fetch('/api/profiles/' + encodeURIComponent(userId) + '/resume_export_limit', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ resume_exports_per_month: resumeBody }),
+              credentials: 'same-origin'
+            });
+            Promise.all([rolePromise, limitPromise, contentPostsPromise, competitorPromise, resumePromise])
               .then(function (responses) {
                 btn.disabled = false;
                 var roleOk = responses[0].ok;
                 var limitOk = responses[1].ok;
                 var postsOk = responses[2].ok;
                 var compOk = responses[3].ok;
-                if (roleOk && limitOk && postsOk && compOk && global.utils && global.utils.toast) global.utils.toast('Saved', 'success');
-                else if ((!roleOk || !limitOk || !postsOk || !compOk) && global.utils && global.utils.toast) global.utils.toast('Failed to save', 'error');
+                var resumeOk = responses[4].ok;
+                if (roleOk && limitOk && postsOk && compOk && resumeOk && global.utils && global.utils.toast) global.utils.toast('Saved', 'success');
+                else if ((!roleOk || !limitOk || !postsOk || !compOk || !resumeOk) && global.utils && global.utils.toast) global.utils.toast('Failed to save', 'error');
               })
               .catch(function () {
                 btn.disabled = false;

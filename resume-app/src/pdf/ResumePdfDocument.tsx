@@ -321,11 +321,20 @@ export function ClassicPdfDocument({ resume }: { resume: Resume }) {
     meta: { fontSize: 9, color: '#444' },
   });
 
+  const photo = resume.personalInfo.photo?.trim();
+
   return (
     <Document title="Resume">
       <Page size="A4" style={s.page}>
-        <Text style={s.h1}>{resume.personalInfo.fullName}</Text>
-        <Text style={s.sub}>{contactLine(resume.personalInfo)}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+          <View style={{ flex: 1, paddingRight: photo?.startsWith('data:') ? 12 : 0 }}>
+            <Text style={s.h1}>{resume.personalInfo.fullName}</Text>
+            <Text style={s.sub}>{contactLine(resume.personalInfo)}</Text>
+          </View>
+          {photo?.startsWith('data:') ? (
+            <Image src={photo} style={{ width: 72, height: 90, objectFit: 'cover' }} />
+          ) : null}
+        </View>
         <View style={s.rule} />
         <Text style={[s.sec, { marginTop: 4 }]}>SUMMARY</Text>
         <Text>{resume.summary.trim()}</Text>

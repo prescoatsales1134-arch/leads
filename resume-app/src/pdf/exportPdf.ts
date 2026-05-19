@@ -6,8 +6,10 @@ import { normalizeResumeForPdf } from '@/utils/normalizeResumeForPdf';
 import { dashboardDownload } from '@/utils/dashboardToast';
 import { pdfResumeFilename } from '@/utils/pdfFilename';
 import { resumePdfDocFor } from '@/pdf/ResumePdfDocument';
+import { requestResumeExportSlot } from '@/utils/resumeExportApi';
 
 export async function exportResumePdf(resumeRaw: Resume, template: ResumeTemplateId): Promise<void> {
+  await requestResumeExportSlot();
   const normalized = normalizeResumeForPdf(resumeRaw);
   const parsed = resumePdfSchema.safeParse(normalized);
   if (!parsed.success) {

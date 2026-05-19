@@ -43,12 +43,29 @@ function AchievementList({ bullets }: { bullets: string[] }) {
   );
 }
 
+function ProfilePhoto({ src, className }: { src?: string; className: string }) {
+  const photo = src?.trim();
+  if (!photo) return null;
+  return <img className={className} src={photo} alt="" />;
+}
+
 function AtsResumeHtml({ resume }: { resume: Resume }) {
+  const photo = resume.personalInfo.photo?.trim();
   return (
     <div className="rb-sheet rb-sheet--ats rb-sheet--letter">
-      <h2 className="rb-sheet-title">{resume.personalInfo.fullName || 'Your name'}</h2>
-      <div className="rb-sheet-muted">{contactBits(resume.personalInfo)}</div>
-      {resume.personalInfo.linkedin ? <div className="rb-sheet-muted rb-sheet-link">{resume.personalInfo.linkedin}</div> : null}
+      <div className="rb-ats-header">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 className="rb-sheet-title">{resume.personalInfo.fullName || 'Your name'}</h2>
+          <div className="rb-sheet-muted">{contactBits(resume.personalInfo)}</div>
+          {resume.personalInfo.linkedin ? (
+            <div className="rb-sheet-muted rb-sheet-link">{resume.personalInfo.linkedin}</div>
+          ) : null}
+        </div>
+        {photo ? <ProfilePhoto src={photo} className="rb-ats-photo" /> : null}
+      </div>
+      {photo ? (
+        <p className="rb-photo-ats-note">Photo shown for preview only — omitted from ATS PDF export.</p>
+      ) : null}
       <div className="rb-sheet-rule" />
       {!!resume.summary.trim() && (
         <>
@@ -197,12 +214,18 @@ function ModernResumeHtml({ resume }: { resume: Resume }) {
 }
 
 function ClassicResumeHtml({ resume }: { resume: Resume }) {
+  const photo = resume.personalInfo.photo?.trim();
   return (
     <div className="rb-sheet rb-sheet--classic">
-      <h2 style={{ margin: '0 0 0.25rem', fontFamily: `'Libre Baskerville', Georgia, serif`, fontWeight: 700 }}>
-        {resume.personalInfo.fullName || 'Applicant'}
-      </h2>
-      <div className="rb-classic-sub">{contactBits(resume.personalInfo)}</div>
+      <div className="rb-classic-header">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{ margin: '0 0 0.25rem', fontFamily: `'Libre Baskerville', Georgia, serif`, fontWeight: 700 }}>
+            {resume.personalInfo.fullName || 'Applicant'}
+          </h2>
+          <div className="rb-classic-sub">{contactBits(resume.personalInfo)}</div>
+        </div>
+        {photo ? <ProfilePhoto src={photo} className="rb-classic-photo" /> : null}
+      </div>
       <div className="rb-sheet-rule" />
       <h3 className="rb-classic-sec">Summary</h3>
       <p>{resume.summary.trim() || 'Compose a concise elevator pitch in the form.'}</p>

@@ -375,6 +375,33 @@
   color: #555;
 }
 
+.rb-ats-header,
+.rb-classic-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.rb-ats-photo,
+.rb-classic-photo {
+  flex-shrink: 0;
+  width: 80px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #d4d4d8;
+  background: #f4f4f5;
+}
+
+.rb-photo-ats-note {
+  margin: 0 0 0.5rem;
+  font-size: 0.68rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
 /* Stepper (wizard) — pattern from dedicated full-page builders */
 .rb-stepper {
   margin-bottom: 1rem;

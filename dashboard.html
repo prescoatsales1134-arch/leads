@@ -486,8 +486,7 @@
       <section id="page-resume" class="page resume-builder-page">
         <h1 class="page-title">Resume Builder</h1>
         <p class="text-muted" style="max-width: 52rem;">
-          Build a professional <strong>ATS-friendly</strong> résumé in steps, preview live, and download PDF — data stays in your browser (auto-saves while you work).
-          Ship <code>resume-dist/</code> with deploy: run <code>npm&nbsp;run&nbsp;build:resume</code> after changing the résumé app, or pull the latest repo where that folder is included.
+          Create a polished résumé in guided steps—choose ATS, modern, or classic layouts, preview as you type, and download a print-ready PDF. Your draft auto-saves in this browser. New accounts get one complimentary PDF export; paid plans include more per month (see <a href="#pricing">Pricing</a>).
         </p>
         <div id="resume-root" class="resume-mount-wrapper" aria-live="polite"></div>
       </section>
@@ -520,6 +519,10 @@
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                   <span>1 competitor analysis per day (UTC)</span>
+                </li>
+                <li>
+                  <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span>5 résumé PDF exports per month (UTC)</span>
                 </li>
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -558,6 +561,10 @@
                 </li>
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span>10 résumé PDF exports per month (UTC)</span>
+                </li>
+                <li>
+                  <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                   <span>Generate &amp; save leads</span>
                 </li>
                 <li>
@@ -588,6 +595,10 @@
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                   <span>5 competitor analyses per day (UTC)</span>
+                </li>
+                <li>
+                  <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <span>15 résumé PDF exports per month (UTC)</span>
                 </li>
                 <li>
                   <span class="pricing-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -750,7 +761,7 @@
         </div>
         <div class="card" id="settings-admin-section" hidden>
           <h2 class="card-title">Manage Users</h2>
-          <p class="text-muted">View all users and assign Admin or Manager roles. Set monthly lead limits, content posts per UTC day, and competitor analyses per UTC day.</p>
+          <p class="text-muted">View all users and assign Admin or Manager roles. Set monthly lead limits, content posts per UTC day, competitor analyses per UTC day, and résumé PDF exports per UTC month.</p>
           <div id="manage-users-loading" class="loading-skeleton" hidden>
             <div class="skeleton-line"></div>
             <div class="skeleton-line"></div>
@@ -768,6 +779,7 @@
                   <th>Lead limit <span class="text-muted" style="font-weight:normal;">/month</span></th>
                   <th>Posts/day <span class="text-muted" style="font-weight:normal;">(UTC)</span></th>
                   <th>Competitor/day <span class="text-muted" style="font-weight:normal;">(UTC)</span></th>
+                  <th>Résumé/mo <span class="text-muted" style="font-weight:normal;">(UTC)</span></th>
                   <th></th>
                 </tr>
               </thead>

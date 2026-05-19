@@ -21,6 +21,12 @@ import { exportResumePdf } from '@/pdf/exportPdf';
 import { dashboardToast } from '@/utils/dashboardToast';
 import { estimateResumePages } from '@/utils/previewEstimate';
 import { SectionStepper, type FormStepId } from '@/components/SectionStepper';
+import {
+  canExportResume,
+  fetchResumeExportLimit,
+  formatResumeExportLimitLabel,
+  type ResumeExportLimitInfo,
+} from '@/utils/resumeExportApi';
 
 function formatRelative(ms: number | null): string {
   if (ms == null) return 'Autosave queued';
@@ -334,6 +340,18 @@ export default function ResumeBuilderRoot() {
 
   const pages = estimateResumePages(previewResume);
   const [formStep, setFormStep] = useState<FormStepId>('profile');
+  const [exportLimit, setExportLimit] = useState<ResumeExportLimitInfo | null>(null);
+
+  const refreshExportLimit = () => {
+    void fetchResumeExportLimit().then(setExportLimit);
+  };
+
+  useEffect(() => {
+    refreshExportLimit();
+  }, []);
+
+  const exportAllowed = canExportResume(exportLimit);
+  const exportLimitLabel = formatResumeExportLimitLabel(exportLimit);
 
   const onExport = async () => {
     const values = methods.getValues();
@@ -341,6 +359,7 @@ export default function ResumeBuilderRoot() {
     try {
       await exportResumePdf(values, template);
       dashboardToast('PDF exported — check your Downloads.', 'success');
+      refreshExportLimit();
     } catch (e: unknown) {
       dashboardToast(e instanceof Error ? e.message : String(e), 'error');
     } finally {
@@ -381,7 +400,13 @@ export default function ResumeBuilderRoot() {
             +
           </button>
           <span className="rb-muted">Zoom {previewZoomPct}%</span>
-          <button type="button" className="rb-btn rb-btn-primary" disabled={pdfBusy} onClick={() => void onExport()}>
+          <button
+            type="button"
+            className="rb-btn rb-btn-primary"
+            disabled={pdfBusy || !exportAllowed}
+            title={!exportAllowed ? exportLimitLabel : undefined}
+            onClick={() => void onExport()}
+          >
             {pdfBusy ? 'Generating…' : 'Download PDF'}
           </button>
           <button type="button" className="rb-btn rb-btn-secondary" onClick={clearAll}>
@@ -392,6 +417,11 @@ export default function ResumeBuilderRoot() {
 
       <div className="rb-layout">
         <div className="rb-panel">
+          {exportLimitLabel ? (
+            <p className="rb-muted" style={{ marginBottom: '0.5rem' }} aria-live="polite">
+              {exportLimitLabel}
+            </p>
+          ) : null}
           <p className="rb-muted" style={{ marginBottom: '1rem', maxWidth: '40rem' }}>
             Use the steps below to fill your résumé. The preview follows your chosen template — <strong>ATS</strong> uses a simple, parser-friendly layout (default). Draft saves when you pause typing (~3s) and every 30s.
           </p>
@@ -440,7 +470,7 @@ export default function ResumeBuilderRoot() {
               <PhotoUpload
                 value={field.value || ''}
                 onChange={(jpeg) => field.onChange(jpeg)}
-                atsMode={template === 'ats'}
+                atsPdfOmitsPhoto={template === 'ats'}
               />
             )}
           />

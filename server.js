@@ -447,6 +447,77 @@ function getCompetitorAnalysisLimitAndUsage(adminClient, userId) {
   });
 }
 
+// --- Resume PDF export: UTC calendar month cap + optional one-time trial when per-month is 0 ---
+function utcMonthBounds() {
+  var now = new Date();
+  var start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+  var end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0));
+  return { startIso: start.toISOString(), endIso: end.toISOString() };
+}
+
+function readResumeExportSettings(adminClient, userId) {
+  return adminClient
+    .from('profiles')
+    .select('resume_exports_per_month, resume_export_trial_used')
+    .eq('id', userId)
+    .maybeSingle()
+    .then(function (r) {
+      if (!r || r.error || !r.data) return undefined;
+      var raw = r.data.resume_exports_per_month;
+      var trialUsed = !!r.data.resume_export_trial_used;
+      var n;
+      if (raw === null || raw === '') n = null;
+      else {
+        n = parseInt(raw, 10);
+        if (isNaN(n) || n < 0) n = 0;
+      }
+      return { perMonth: n, trialUsed: trialUsed };
+    })
+    .catch(function () {
+      return undefined;
+    });
+}
+
+function getResumeExportLimitAndUsage(adminClient, userId) {
+  if (!adminClient || !userId) {
+    return Promise.resolve({ limit: 0, used: 0, remaining: 0, mode: 'blocked' });
+  }
+  var bounds = utcMonthBounds();
+  return readResumeExportSettings(adminClient, userId).then(function (settings) {
+    if (settings === undefined) {
+      return { limit: 0, used: 0, remaining: 0, mode: 'blocked' };
+    }
+    function countThisMonth() {
+      return adminClient
+        .from('resume_export_log')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', bounds.startIso)
+        .lt('created_at', bounds.endIso)
+        .then(function (c) {
+          return c && c.count != null ? c.count : 0;
+        });
+    }
+    var perMonth = settings.perMonth;
+    var trialUsed = settings.trialUsed;
+    return countThisMonth().then(function (used) {
+      if (perMonth === null) {
+        return { limit: null, used: used, remaining: null, mode: 'unlimited' };
+      }
+      if (perMonth > 0) {
+        var remMonthly = Math.max(0, perMonth - used);
+        return { limit: perMonth, used: used, remaining: remMonthly, mode: 'monthly' };
+      }
+      if (!trialUsed) {
+        return { limit: 0, used: used, remaining: 1, mode: 'trial' };
+      }
+      return { limit: 0, used: used, remaining: 0, mode: 'blocked' };
+    });
+  }).catch(function () {
+    return { limit: 0, used: 0, remaining: 0, mode: 'blocked' };
+  });
+}
+
 function normalizeCompetitorDomain(input) {
   var s = input != null ? String(input).trim() : '';
   if (!s) return '';
@@ -686,7 +757,7 @@ app.get('/api/profiles', function (req, res) {
         if (role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
         return supabaseAdmin
           .from('profiles')
-          .select('id, email, full_name, role, lead_generation_limit, content_posts_per_day, competitor_analysis_per_day')
+          .select('id, email, full_name, role, lead_generation_limit, content_posts_per_day, competitor_analysis_per_day, resume_exports_per_month')
           .order('email');
       });
     })
@@ -811,6 +882,39 @@ app.patch('/api/profiles/:id/competitor_analysis_limit', function (req, res) {
     });
 });
 
+app.patch('/api/profiles/:id/resume_export_limit', function (req, res) {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
+  const targetUserId = req.params.id;
+  const raw = req.body && req.body.resume_exports_per_month;
+  const value = raw === null || raw === undefined || raw === '' ? null : parseInt(raw, 10);
+  if (value !== null && (isNaN(value) || value < 0)) {
+    return res.status(400).json({
+      error: 'resume_exports_per_month must be a non-negative number or null (unlimited)'
+    });
+  }
+  if (!targetUserId) return res.status(400).json({ error: 'Missing user id' });
+  getAuthUser(req, res)
+    .then(function (auth) {
+      if (!auth) return res.status(401).json({ error: 'Invalid session' });
+      return resolveRole(supabaseAdmin, auth.user.id).then(function (currentRole) {
+        if (currentRole !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+        return supabaseAdmin
+          .from('profiles')
+          .update({ resume_exports_per_month: value })
+          .eq('id', targetUserId)
+          .select();
+      });
+    })
+    .then(function (result) {
+      if (res.headersSent) return;
+      if (result && result.error) return res.status(500).json({ error: result.error.message });
+      res.json({ ok: true });
+    })
+    .catch(function () {
+      if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+    });
+});
+
 // GET /api/linkedin-filter-options — Peakydev-aligned industries, countries, regions, seniority, company sizes (LinkedIn generate)
 app.get('/api/linkedin-filter-options', function (req, res) {
   requireUser(req, res, function () {
@@ -878,6 +982,72 @@ app.get('/api/content-post-limit', function (req, res) {
     }).catch(function () {
       if (!res.headersSent) res.status(500).json({ error: 'Server error' });
     });
+  });
+});
+
+// GET /api/resume-export-limit — monthly resume PDF export cap (UTC month) + trial
+app.get('/api/resume-export-limit', function (req, res) {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
+  requireUser(req, res, function (user) {
+    if (res.headersSent) return;
+    getResumeExportLimitAndUsage(supabaseAdmin, user.id)
+      .then(function (info) {
+        var limit = info.limit;
+        var used = info.used;
+        var remaining = info.remaining;
+        if (info.mode === 'unlimited') {
+          remaining = null;
+        } else if (info.mode === 'monthly' && limit != null) {
+          remaining = Math.max(0, limit - used);
+        }
+        res.json({ limit: limit, used: used, remaining: remaining, mode: info.mode });
+      })
+      .catch(function () {
+        if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+      });
+  });
+});
+
+// POST /api/resume-export — enforce cap, log successful export intent (client generates PDF)
+app.post('/api/resume-export', function (req, res) {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase not configured' });
+  requireUser(req, res, function (user) {
+    if (res.headersSent) return;
+    getResumeExportLimitAndUsage(supabaseAdmin, user.id)
+      .then(function (info) {
+        if (info.mode === 'blocked') {
+          return res.status(403).json({
+            error:
+              'No résumé PDF exports left this month. New accounts get one complimentary export, then Basic (5/mo), Standard (10/mo), or Premium (15/mo)—or ask an admin to set your limit.'
+          });
+        }
+        if (info.mode === 'monthly' && info.limit != null && info.used >= info.limit) {
+          return res.status(403).json({
+            error:
+              'Monthly résumé PDF limit reached (' +
+              info.limit +
+              ' per UTC month). Resets on the 1st, or ask an admin to raise your limit.'
+          });
+        }
+        var insertPromise = supabaseAdmin.from('resume_export_log').insert({ user_id: user.id });
+        var trialPromise = Promise.resolve();
+        if (info.mode === 'trial') {
+          trialPromise = supabaseAdmin
+            .from('profiles')
+            .update({ resume_export_trial_used: true })
+            .eq('id', user.id);
+        }
+        return Promise.all([insertPromise, trialPromise]).then(function (results) {
+          var ins = results[0];
+          if (ins && ins.error) {
+            return res.status(500).json({ error: ins.error.message || 'Could not record export' });
+          }
+          res.json({ ok: true });
+        });
+      })
+      .catch(function () {
+        if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+      });
   });
 });
 
