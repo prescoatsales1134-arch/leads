@@ -1745,7 +1745,7 @@ app.get('/api/env', function (req, res) {
 // Prevent caching of dashboard and app script so "View all activity" (Details + View columns) always loads latest
 app.use(function (req, res, next) {
   var p = req.path || '';
-  if (p === '/dashboard.html' || p === '/app.js' || p.indexOf('/app.js') === 0) {
+  if (p === '/dashboard.html' || p === '/app.js' || p.indexOf('/app.js') === 0 || p.indexOf('/resume-dist/') === 0) {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.set('Pragma', 'no-cache');
   }

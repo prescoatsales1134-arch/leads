@@ -6,7 +6,7 @@
   <title>Lead AI – Leads & Sales Dashboard</title>
   <link rel="icon" href="assets/favicon.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="resume-dist/resume-builder.css" />
+  <link rel="stylesheet" href="/resume-dist/resume-builder.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
@@ -884,8 +884,8 @@
         .then(function() { return loadScript('chatbot.js?v=3'); })
         .then(function() { return loadScript('app.js?v=3'); })
         .then(function() {
-          return loadScript('resume-dist/resume-builder.js').catch(function (err) {
-            console.warn('[resume] resume-dist/resume-builder.js missing — run npm run build:resume:', err && err.message);
+          return loadScript('/resume-dist/resume-builder.js').catch(function (err) {
+            console.warn('[resume] /resume-dist/resume-builder.js missing — deploy resume-dist or run npm run build:resume:', err && err.message);
           });
         })
         .then(function() { return loadScript('resume-mount.js'); })

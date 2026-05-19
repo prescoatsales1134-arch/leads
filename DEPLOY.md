@@ -10,6 +10,13 @@ npm run build:resume
 
 Then commit the updated **`resume-dist/`** files and push.
 
+### Troubleshooting: “Résumé UI not loaded” on the dashboard
+
+1. **SSH into the VPS**, `cd` to the app folder (same level as `server.js`), run: **`ls -la resume-dist/resume-builder.js`**.  
+   - **No such file** → run **`git pull origin main`**, then **`ls`** again. If still missing, run **`npm run build:resume`** (needs Node on the server), then **`pm2 restart leads-linked`**.
+2. In your browser, open **`https://YOUR_DOMAIN/resume-dist/resume-builder.js`**. You should download or see a large JS file, **not** a 404 HTML page. If 404, the deployed folder doesn’t contain `resume-dist/` or Nginx is serving a different docroot.
+3. Hard-refresh the dashboard (**Ctrl+Shift+R** / **Cmd+Shift+R**) after the file exists.
+
 ## On your Mac (push to GitHub)
 
 ```bash
