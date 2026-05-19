@@ -1,5 +1,15 @@
 # Deploy commands
 
+## Résumé builder (`resume-dist/`)
+
+**`resume-dist/resume-builder.js`** and **`resume-builder.css`** are **tracked in Git** so production loads the builder without an extra build step. Whenever you change **`resume-app/`**, run from the repo root:
+
+```bash
+npm run build:resume
+```
+
+Then commit the updated **`resume-dist/`** files and push.
+
 ## On your Mac (push to GitHub)
 
 ```bash
@@ -17,13 +27,12 @@ Run these **in order**: pull code, install deps if needed, then restart PM2.
 cd /var/www/leads-linked
 git pull origin main
 npm install
-npm run build:resume
 pm2 restart leads-linked
 pm2 save
 ```
 
 - Use your real app path if it is not `/var/www/leads-linked`.
-- **`npm run build:resume`** builds the Résumé sub-app (`resume-dist/resume-builder.js` + `resume-builder.css`) that `dashboard.html` loads — run it whenever `resume-app/` changes on that server.
+- If **`resume-dist/`** is missing after `git pull` (or you only edited **`resume-app/`** on the server), run **`npm run build:resume`** once in that directory, then restart PM2.
 - **`pm2 save`** persists the process list after reboot (you only need it when you change which apps PM2 runs, not necessarily every deploy).
 
 ### `.env` on the VPS

@@ -4,5 +4,5 @@ node_modules/
 *.log
 .DS_Store
 # Local clone for design reference only (ui-ux-pro-max-skill)
-resume-dist/
+vendor/ui-ux-pro-max-skill/
 
