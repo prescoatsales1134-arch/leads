@@ -14,6 +14,7 @@ import type { Resume, ResumeTemplateId } from '@/types/resume';
 import { STORAGE_KEY, hydrateResume, newResume, parseStoredResume } from '@/defaultResume';
 import { resumeSchema } from '@/schemas/resumeSchema';
 import { PhotoUpload } from '@/components/PhotoUpload';
+import { AiAssistField } from '@/components/AiAssistField';
 import { ResumeHtmlPreview } from '@/preview/ResumeHtmlPreview';
 import { useDebouncedResume } from '@/hooks/useDebouncedResume';
 import { useResumeUiStore } from '@/store/uiStore';
@@ -27,6 +28,7 @@ import {
   formatResumeExportLimitLabel,
   type ResumeExportLimitInfo,
 } from '@/utils/resumeExportApi';
+import { CAREER_FOCUS_OPTIONS } from '@/utils/resumeAssistApi';
 
 function formatRelative(ms: number | null): string {
   if (ms == null) return 'Autosave queued';
@@ -337,6 +339,8 @@ export default function ResumeBuilderRoot() {
   const pdfBusy = useResumeUiStore((s) => s.pdfGeneration);
   const setPdfBusy = useResumeUiStore((s) => s.setPdfGeneration);
   const lastSavedAtStore = useResumeUiStore((s) => s.lastSavedAt);
+  const careerFocus = useResumeUiStore((s) => s.careerFocus);
+  const setCareerFocus = useResumeUiStore((s) => s.setCareerFocus);
 
   const pages = estimateResumePages(previewResume);
   const [formStep, setFormStep] = useState<FormStepId>('profile');
@@ -388,6 +392,21 @@ export default function ResumeBuilderRoot() {
           <p className="rb-muted">{lastLabel}</p>
         </div>
         <div className="rb-toolbar-controls">
+          <label style={{ margin: 0 }}>
+            <span className="rb-label">Target role</span>
+            <select
+              className="rb-select"
+              value={careerFocus}
+              onChange={(ev) => setCareerFocus(ev.target.value as typeof careerFocus)}
+              title="AI assist tailors wording for this career focus"
+            >
+              {CAREER_FOCUS_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label style={{ margin: 0 }}>
             <span className="rb-label">Template</span>
             <select className="rb-select" value={template} onChange={(ev) => setTemplate(ev.target.value as ResumeTemplateId)}>
@@ -476,7 +495,21 @@ export default function ResumeBuilderRoot() {
           <div className="rb-section-head">
             <h3>Professional summary</h3>
           </div>
-          <textarea className="rb-textarea" rows={5} {...methods.register('summary')} />
+          <Controller
+            name="summary"
+            control={methods.control}
+            render={({ field }) => (
+              <AiAssistField
+                label="Summary"
+                value={field.value || ''}
+                onChange={field.onChange}
+                fieldType="summary"
+                careerFocus={careerFocus}
+                rows={5}
+                placeholder="Brief pitch: years of experience, sales focus, strengths…"
+              />
+            )}
+          />
               </>
             )}
 
@@ -529,31 +562,48 @@ export default function ResumeBuilderRoot() {
                 />
                 Currently employed here
               </label>
-              <label style={{ display: 'block', marginTop: '0.5rem' }}>
-                <span className="rb-label">Role narrative</span>
-                <textarea
-                  className="rb-textarea"
-                  {...methods.register(`experience.${idx}.description`)}
-                  rows={5}
-                  placeholder="Responsibilities, tools, achievements…"
-                />
-              </label>
-              <label style={{ display: 'block', marginTop: '0.5rem' }}>
-                <span className="rb-label">Achievement bullets · one per line</span>
-                <Controller
-                  name={`experience.${idx}.achievements`}
-                  control={methods.control}
-                  render={({ field }) => (
-                    <textarea
-                      className="rb-textarea"
-                      rows={4}
-                      value={field.value.join('\n')}
-                      onChange={(e) => field.onChange(e.target.value.replace(/\r\n/g, '\n').split('\n'))}
-                      placeholder={`Grew inbound qualified pipeline…\nShipped KPI dashboard…`}
-                    />
-                  )}
-                />
-              </label>
+              <Controller
+                name={`experience.${idx}.description`}
+                control={methods.control}
+                render={({ field }) => (
+                  <AiAssistField
+                    label="Role narrative"
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    fieldType="experience"
+                    careerFocus={careerFocus}
+                    rows={5}
+                    placeholder="Responsibilities, tools, achievements…"
+                    context={{
+                      jobTitle: methods.watch(`experience.${idx}.jobTitle`),
+                      company: methods.watch(`experience.${idx}.company`),
+                      location: methods.watch(`experience.${idx}.location`),
+                    }}
+                  />
+                )}
+              />
+              <Controller
+                name={`experience.${idx}.achievements`}
+                control={methods.control}
+                render={({ field }) => (
+                  <AiAssistField
+                    label="Achievement bullets · one per line"
+                    value={(field.value || []).join('\n')}
+                    onChange={(text) =>
+                      field.onChange(text.replace(/\r\n/g, '\n').split('\n'))
+                    }
+                    fieldType="achievements"
+                    careerFocus={careerFocus}
+                    rows={4}
+                    placeholder={`Grew inbound qualified pipeline…\nExceeded monthly quota…`}
+                    context={{
+                      jobTitle: methods.watch(`experience.${idx}.jobTitle`),
+                      company: methods.watch(`experience.${idx}.company`),
+                      location: methods.watch(`experience.${idx}.location`),
+                    }}
+                  />
+                )}
+              />
               <div className="rb-mini-actions">
                 <button type="button" className="rb-btn rb-btn-secondary" disabled={idx === 0} onClick={() => swapExp(idx, idx - 1)}>
                   ↑

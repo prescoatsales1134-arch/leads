@@ -71,6 +71,41 @@
   margin-bottom: 0.35rem;
 }
 
+.rb-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.rb-label-row .rb-label {
+  margin-bottom: 0;
+}
+
+.rb-btn-ai {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  background: var(--accent-soft);
+  color: #e9d5ff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rb-btn-ai:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.35);
+  border-color: var(--accent-primary);
+}
+
+.rb-btn-ai:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .rb-input,
 .rb-select,
 .rb-textarea {

@@ -14,6 +14,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { createClient } = require('@supabase/supabase-js');
 const contentGenLib = require('./content-generate-lib');
+const resumeAssistLib = require('./resume-assist-lib');
 const contentImageBuilder = require('./content-image-builder');
 const contentImageGenerator = require('./content-image-generator');
 const { uploadImageToSupabase } = require('./content-image-storage');
@@ -1047,6 +1048,84 @@ app.post('/api/resume-export', function (req, res) {
       })
       .catch(function () {
         if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+      });
+  });
+});
+
+// POST /api/resume-assist — rephrase summary / experience copy for sales-focused résumés (OpenAI, server-side)
+app.post('/api/resume-assist', function (req, res) {
+  var apiKey = (process.env.OPENAI_API_KEY || '').trim();
+  var model = (process.env.OPENAI_RESUME_MODEL || process.env.OPENAI_CONTENT_MODEL || 'gpt-4.1-mini').trim();
+  if (!apiKey) return res.status(503).json({ error: 'OpenAI not configured on server (set OPENAI_API_KEY)' });
+  requireUser(req, res, function () {
+    if (res.headersSent) return;
+    var body = req.body && typeof req.body === 'object' ? req.body : {};
+    var text = body.text != null ? String(body.text).trim() : '';
+    var fieldType = body.fieldType != null ? String(body.fieldType).trim() : 'summary';
+    if (['summary', 'experience', 'achievements'].indexOf(fieldType) < 0) {
+      return res.status(400).json({ error: 'fieldType must be summary, experience, or achievements' });
+    }
+    if (text.length < 8) {
+      return res.status(400).json({ error: 'Write at least a few words before using AI assist' });
+    }
+    if (text.length > 4000) {
+      return res.status(400).json({ error: 'Text is too long (max 4000 characters)' });
+    }
+    var ctx = body.context && typeof body.context === 'object' ? body.context : {};
+    var userMsg = resumeAssistLib.buildUserPrompt({
+      text: text,
+      fieldType: fieldType,
+      careerFocus: body.careerFocus,
+      context: {
+        jobTitle: ctx.jobTitle,
+        company: ctx.company,
+        location: ctx.location
+      }
+    });
+    fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({
+        model: model,
+        max_tokens: fieldType === 'summary' ? 400 : fieldType === 'achievements' ? 600 : 700,
+        temperature: 0.55,
+        messages: [
+          { role: 'system', content: resumeAssistLib.SYSTEM_PROMPT },
+          { role: 'user', content: userMsg }
+        ]
+      })
+    })
+      .then(function (wh) {
+        return wh.text().then(function (txt) {
+          return { ok: wh.ok, status: wh.status, raw: txt || '' };
+        });
+      })
+      .then(function (ref) {
+        if (!ref.ok) {
+          var detail = ref.raw;
+          try {
+            var j = JSON.parse(ref.raw);
+            detail = (j && j.error && j.error.message) || detail;
+          } catch (e) { /* ignore */ }
+          return res.status(502).json({ error: detail || ('OpenAI error HTTP ' + ref.status) });
+        }
+        var data;
+        try {
+          data = JSON.parse(ref.raw);
+        } catch (e) {
+          return res.status(502).json({ error: 'Invalid response from OpenAI' });
+        }
+        var out =
+          data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        out = (out || '').trim().replace(/^["']|["']$/g, '');
+        if (!out) return res.status(502).json({ error: 'AI returned empty text' });
+        res.json({ text: out });
+      })
+      .catch(function () {
+        if (!res.headersSent) res.status(502).json({ error: 'Could not reach OpenAI' });
       });
   });
 });
