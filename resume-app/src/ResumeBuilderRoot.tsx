@@ -388,7 +388,9 @@ export default function ResumeBuilderRoot() {
     <FormProvider {...methods}>
       <div className="rb-toolbar rb-panel" style={{ border: 'none', padding: 0, background: 'transparent' }}>
         <div style={{ flex: 1 }}>
-          <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 800 }}>Resume Builder</h2>
+          <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 800 }}>
+            AI Resume Builder For Sales & Marketing Professionals
+          </h2>
           <p className="rb-muted">{lastLabel}</p>
         </div>
         <div className="rb-toolbar-controls">
